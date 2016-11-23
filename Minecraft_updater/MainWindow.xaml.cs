@@ -39,7 +39,7 @@ namespace Minecraft_updater
         Version Minecraft_updater_Version=new Version();
         bool AutoClose_AfterFinishd = false;
         List<Pack> list = new List<Pack>();
-
+        bool updateNeed = false;
         #region 私人方法
         public static string GetMD5(string filepath)
         {
@@ -90,33 +90,18 @@ namespace Minecraft_updater
                     Log_AddLine("自我檢查更新...", Colors.Black);
                     UpdateSelf();
                 }
-                else if (fname.IndexOf("-isnew") != -1)
+                else if (fname.IndexOf("/?") != -1)
+                    MessageBox.Show("");
+                else if (fname.IndexOf("-updatepackMaker") != -1)
                 {
-                    try
-                    {
-                        Process[] MyProcess = Process.GetProcessesByName(System.IO.Path.GetFileNameWithoutExtension(App.Current.Properties["MyArg1"].ToString()));
-                        MyProcess[0].CloseMainWindow();
-                        MyProcess[0].WaitForExit(1000);
-                        if(!MyProcess[0].HasExited)
-                        {
-                            MyProcess[0].Kill();
-                            MyProcess[0].WaitForExit(1000);
-                        }
-                        File.Delete(App.Current.Properties["MyArg1"].ToString());
-                        File.Copy(System.Reflection.Assembly.GetExecutingAssembly().Location, App.Current.Properties["MyArg1"].ToString());
-                        Process p = new Process();
-                        p.StartInfo.FileName = App.Current.Properties["MyArg1"].ToString();
-                        p.StartInfo.Arguments = "-temp_clear \"" + System.Reflection.Assembly.GetExecutingAssembly().Location + "\"";
-                        p.Start();
-                        this.Close();
-                        return;
-                    }
-                    catch 
-                    {
-
-                    }
+                    label.Content = "";
+                    textBox.Text= ini.IniReadValue("Minecraft_updater", "updatepackMaker_BaseURL");
+                    richTextBox.AllowDrop = true;
+                    richTextBox.AddHandler(RichTextBox.DragOverEvent, new DragEventHandler(RichTextBox_DragOver), true);
+                    richTextBox.AddHandler(RichTextBox.DropEvent, new DragEventHandler(RichTextBox_Drop), true);
+                    updateNeed = true;
                 }
-                else if(fname.IndexOf("-temp_clear") != -1)
+                else if (fname.IndexOf("-isnew") != -1)
                 {
                     try
                     {
@@ -129,11 +114,43 @@ namespace Minecraft_updater
                             MyProcess[0].WaitForExit(1000);
                         }
                         File.Delete(App.Current.Properties["MyArg1"].ToString());
+                        File.Copy(System.Reflection.Assembly.GetExecutingAssembly().Location, App.Current.Properties["MyArg1"].ToString());
+                        Process p = new Process();
+                        p.StartInfo.FileName = App.Current.Properties["MyArg1"].ToString();
+                        p.StartInfo.Arguments = "-temp_clear \"" + System.Reflection.Assembly.GetExecutingAssembly().Location + "\"";
+                        p.Start();
+                        updateNeed = true;
+                        this.Close();
+                        return;
+                    }
+                    catch
+                    {
+
+                    }
+                }
+                else if (fname.IndexOf("-temp_clear") != -1)
+                {
+                    try
+                    {
+                        Process[] MyProcess = Process.GetProcessesByName(System.IO.Path.GetFileNameWithoutExtension(App.Current.Properties["MyArg1"].ToString()));
+                        MyProcess[0].CloseMainWindow();
+                        MyProcess[0].WaitForExit(1000);
+                        if (!MyProcess[0].HasExited)
+                        {
+                            MyProcess[0].Kill();
+                            MyProcess[0].WaitForExit(1000);
+                        }
+                    }
+                    catch { }
+                    try
+                    {
+                        File.Delete(App.Current.Properties["MyArg1"].ToString());
                     }
                     catch { }
                 }
             }
-            CheckPack();
+            if(!updateNeed )
+                CheckPack();
         }
 
         private void UpdateSelf()
@@ -141,7 +158,7 @@ namespace Minecraft_updater
             Minecraft_updater_Version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
             Version VersionNew = new Version();
             URL_Minecraft_updater_release = ini.IniReadValue("Minecraft_updater", "URL_Minecraft_updater_release");
-            bool updateNeed = false;
+            
             if (URL_Minecraft_updater_release != "")
                 using (WebClient myWebClient = new WebClient())
                 {
@@ -197,7 +214,6 @@ namespace Minecraft_updater
                     Match m = r.Match(temp);
                     if (m.Success)
                     {
-
                         list.Add(new Pack { Name = m.Groups[1].ToString(), Subfolder = m.Groups[2].ToString(), MD5 = ((m.Groups[3] == null) ? "" : m.Groups[3].ToString()), URL = ((m.Groups[4] == null) ? "" : m.Groups[4].ToString()), IsChecked = false });
                     }
                 }
@@ -220,7 +236,7 @@ namespace Minecraft_updater
 
                 foreach (var temp in files)
                 {
-                    var t = list.FirstOrDefault(z => temp.Contains(z.Name));
+                    var t = list.FirstOrDefault(z => System.IO.Path.GetFileName(temp).Contains(z.Name));
                     if (t.Name != null)
                     {
                         if (t.URL == "" && t.MD5 == "")
@@ -299,6 +315,50 @@ namespace Minecraft_updater
             Log_AddLine("確認完成！", Colors.Green);
             if (AutoClose_AfterFinishd)
                 Close();
-        }        
+        }
+        private void RichTextBox_DragOver(object sender, DragEventArgs e)
+        {
+            if (e.Data.GetDataPresent(DataFormats.FileDrop))
+            {
+                e.Effects = DragDropEffects.All;
+            }
+            else
+            {
+                e.Effects = DragDropEffects.None;
+            }
+            e.Handled = false;
+        }
+
+        private void RichTextBox_Drop(object sender, DragEventArgs e)
+        {
+            if (e.Data.GetDataPresent(DataFormats.FileDrop))
+            {
+                string[] docPath = (string[])e.Data.GetData(DataFormats.FileDrop);
+
+                // By default, open as Rich Text (RTF).  
+                var dataFormat = DataFormats.Rtf;
+
+                // If the Shift key is pressed, open as plain text.  
+                if (e.KeyStates == DragDropKeyStates.ShiftKey)
+                {
+                    dataFormat = DataFormats.Text;
+                }
+                foreach(string path in docPath)
+                {
+                    if(File.Exists(path))
+                    {
+                        string name = System.IO.Path.GetFileName(path);
+                        string MD5 = GetMD5(path);
+                        string URL = textBox.Text + name;
+                        richTextBox.AppendText(String.Format("{0}||\\||{1}||{2}",name,MD5,URL)+"\n");
+                    }
+                }
+            }
+        }
+
+        private void textbox_TextChange(object sender, TextChangedEventArgs e)
+        {
+            ini.IniWriteValue("Minecraft_updater", "updatepackMaker_BaseURL", textBox.Text);
+        }
     }
 }

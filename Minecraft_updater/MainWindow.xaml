@@ -7,7 +7,7 @@
         mc:Ignorable="d"
         Title="MainWindow" Height="350" Width="525">
     <Grid Loaded="Function_Loaded">
-        <RichTextBox x:Name="richTextBox" HorizontalAlignment="Left" Height="254" Margin="51,49,0,0" VerticalAlignment="Top" Width="402">
+        <RichTextBox x:Name="richTextBox" HorizontalAlignment="Left" Height="254" Margin="63,49,0,0" VerticalAlignment="Top" Width="402">
             <FlowDocument>
                 <Paragraph>
                     <Run Text=""/>
@@ -15,5 +15,6 @@
             </FlowDocument>
         </RichTextBox>
         <Label x:Name="label" Content="Log：" HorizontalAlignment="Left" Margin="30,19,0,0" VerticalAlignment="Top" RenderTransformOrigin="-0.337,0.773"/>
+        <TextBox x:Name="textBox" HorizontalAlignment="Left" Height="24" Margin="78,19,0,0" TextWrapping="Wrap" Text="基本網址" VerticalAlignment="Top" Width="387" TextChanged="textbox_TextChange"/>
     </Grid>
 </Window>
