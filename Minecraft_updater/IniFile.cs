@@ -26,8 +26,14 @@ namespace InI_File_Merger
         private static byte[] getBytes(string s, string encodingName)
         {
             return null == s ? null : Encoding.GetEncoding(encodingName).GetBytes(s);
-        }
-        //寫INI文件
+        }        
+        /// <summary>
+        /// 寫入INI文件
+        /// </summary>
+        /// <param name="Section"></param>
+        /// <param name="Key"></param>
+        /// <param name="Value"></param>
+        /// <param name="Encode"></param>
         public void IniWriteValue(string Section, string Key, string Value,string Encode = "utf-8")
         {
             WritePrivateProfileString(getBytes(Section, Encode), getBytes(Key, Encode), getBytes(Value, Encode), path);

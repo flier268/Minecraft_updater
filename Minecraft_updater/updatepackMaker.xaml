@@ -1,0 +1,29 @@
+﻿<Window x:Class="Minecraft_updater.updatepackMaker"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:Minecraft_updater"
+        mc:Ignorable="d"
+        Title="updatepackMaker" Height="648.958" Width="723.698" DragOver="RichTextBox_DragOver" Drop="RichTextBox_Drop" AllowDrop="True" Loaded="Window_Load">
+    <Grid Margin="0,0,0,-2">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="27*"/>
+            <ColumnDefinition Width="549*"/>
+            <ColumnDefinition Width="48*"/>
+            <ColumnDefinition Width="92*"/>
+        </Grid.ColumnDefinitions>
+        <RichTextBox x:Name="richTextBox" HorizontalAlignment="Left" Height="254" Margin="12,53,0,0" VerticalAlignment="Top" Width="402" AllowDrop="False" Grid.Column="1">
+            <FlowDocument>
+                <Paragraph>
+                    <Run Text=""/>
+                </Paragraph>
+            </FlowDocument>
+        </RichTextBox>
+        <Label x:Name="label" Content="Log：" HorizontalAlignment="Left" Margin="12,24,0,0" VerticalAlignment="Top" RenderTransformOrigin="-0.337,0.773" Height="25" Width="43" Grid.Column="1"/>
+        <TextBox x:Name="textBox" HorizontalAlignment="Left" Height="24" Margin="10,24,0,0" TextWrapping="Wrap" Text="http://aaa.bb.com/" VerticalAlignment="Top" Width="529" AllowDrop="False" Grid.Column="1"/>
+        <Button x:Name="button_savefile" Content="儲存" HorizontalAlignment="Left" Height="33" Margin="23,312,0,0" VerticalAlignment="Top" Width="67" Click="button_savefile_Click" Grid.Column="1"/>
+        <CheckBox x:Name="checkBox" Content="mods" HorizontalAlignment="Left" Margin="429,98,0,0" VerticalAlignment="Top" IsChecked="True" Grid.Column="1"/>
+        <Label x:Name="label1" Content="模糊搜索檔名" HorizontalAlignment="Left" Margin="419,73,0,0" VerticalAlignment="Top" Grid.Column="1"/>
+    </Grid>
+</Window>
