@@ -1,11 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Configuration;
-using System.Data;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 
 namespace Minecraft_updater
@@ -29,13 +26,13 @@ namespace Minecraft_updater
                 }
                 else if (Args[0].Equals(listCommand.Check_Update))
                 {
-                    var window = new updater(Args[1]);
+                    var window = new updater();
                     window.Show();
                 }
                 else if (Args[0].Equals(listCommand.Check_updaterVersion))
                 {
-                    Update();
-                    Application.Current.Shutdown();
+                    //Update();
+                    //Application.Current.Shutdown();
                 }
             }
             else
@@ -43,11 +40,10 @@ namespace Minecraft_updater
                 StringBuilder s = new StringBuilder();
                 s.AppendLine("請使用附加參數啟動");
                 s.AppendLine("檢查Minecraft懶人包更新：");
-                s.AppendLine("Minecraft_updater.exe " + listCommand.Check_Update + " {RUL}");
-                s.AppendLine("//{URL}是清單的網址");
+                s.AppendLine("Minecraft_updater.exe " + listCommand.Check_Update);                
                 s.AppendLine();
-                s.AppendLine("檢查Minecraft_updater更新：");
-                s.AppendLine("Minecraft_updater.exe " + listCommand.Check_updaterVersion);
+                //s.AppendLine("檢查Minecraft_updater更新：");
+                //s.AppendLine("Minecraft_updater.exe " + listCommand.Check_updaterVersion);
                 s.AppendLine("Minecraft懶人包之檔案清單建立工具：");
                 s.AppendLine("Minecraft_updater.exe " + listCommand.updatepackMaker);
 

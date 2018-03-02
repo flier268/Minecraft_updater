@@ -2,12 +2,10 @@
 using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Documents;
 
 namespace Minecraft_updater
 {
@@ -20,13 +18,98 @@ namespace Minecraft_updater
         {
             InitializeComponent();
         }
-        IniFile ini = new IniFile(System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location) + "\\config.ini");
-        
+        IniFile ini = new IniFile(Path.Combine(System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location), "config.ini"));
+        char[] listAllNumber = new char[10] { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9' };
         List<Pack> list = new List<Pack>();
-  
-        
 
-        private void RichTextBox_DragOver(object sender, DragEventArgs e)
+
+
+        private void TextBlock_Drop(object sender, DragEventArgs e)
+        {
+            TextBlock textBlock = ((TextBlock)sender).Name == TextBlock1.Name ? TextBlock1 : TextBlock2;
+            if (e.Data.GetDataPresent(DataFormats.FileDrop))
+            {
+                if (!((string[])e.Data.GetData(DataFormats.FileDrop))[0].StartsWith(AppDomain.CurrentDomain.BaseDirectory))
+                {
+                    MessageBox.Show("請將Minecraft_updater置於該目錄/檔案於同一目錄下\r\n詳情請查閱wiki");
+                    return;
+                }
+                if (textBlock.Text.Trim() != "")
+                    switch (MessageBox.Show("", "", MessageBoxButton.YesNoCancel))
+                    {
+                        case MessageBoxResult.No:
+                            textBlock.Text = "";
+                            break;
+                        case MessageBoxResult.Yes:
+                            break;
+                        default:
+                            return;
+                    }
+                string[] docPath = (string[])e.Data.GetData(DataFormats.FileDrop);
+                int basepathLength = AppDomain.CurrentDomain.BaseDirectory.Length;
+                string name, MD5, URL;
+                StringBuilder sb = new StringBuilder(), sb2 = new StringBuilder();
+                bool addmodtodelete = checkbox_addmodtodelete.IsChecked.Value;
+                bool addconfigtodelete = checkbox_addconfigtodelete.IsChecked.Value;
+                foreach (string path in docPath)
+                {
+                    if (File.Exists(path))
+                    {
+                        name = path.Substring(basepathLength, path.Length - basepathLength);
+                        MD5 = Private_Function.GetMD5(path);
+                        URL = textBox.Text + name;
+                        if (textBlock.Equals(TextBlock1))
+                        {
+                            sb.AppendLine(String.Format("{0}||{1}||{2}", name, MD5, URL));
+                            if ((addmodtodelete && name.Contains("mod")) || (addconfigtodelete && name.Contains("config")))
+                            {
+                                int temp = name.IndexOfAny(listAllNumber);
+                                sb2.AppendLine(String.Format("#{0}||{1}||", name.Substring(0, temp == -1 ? name.Length : temp), MD5));
+                            }
+                        }
+                        else
+                        {
+                            int temp = name.IndexOfAny(listAllNumber);
+                            sb2.AppendLine(String.Format("#{0}||{1}||", name.Substring(0, temp == -1 ? name.Length : temp), MD5));
+                        }
+                        
+
+                    }
+                    else if (Directory.Exists(path))
+                    {
+                        DirectoryInfo di = new DirectoryInfo(path);
+                        foreach (var fi in di.EnumerateFiles("*", SearchOption.AllDirectories))
+                        {
+                            name = fi.FullName.Substring(basepathLength, fi.FullName.Length - basepathLength);
+                            MD5 = Private_Function.GetMD5(fi.FullName);
+                            URL = textBox.Text + Path.GetFileName(path) + fi.FullName.Substring(path.Length).Replace("\\", "/");
+                            if (textBlock.Equals(TextBlock1))
+                            {
+                                sb.AppendLine(String.Format("{0}||{1}||{2}"
+                                   , name
+                                   , MD5
+                                   , URL));
+                                if ((addmodtodelete && name.Contains("mod")) || (addconfigtodelete && name.Contains("config")))
+                                {
+                                    int temp = name.IndexOfAny(listAllNumber);
+                                    sb2.AppendLine(String.Format("#{0}||{1}||", name.Substring(0, temp == -1 ? name.Length : temp), MD5));
+                                }
+                            }
+                            else
+                            {
+                                int temp = name.IndexOfAny(listAllNumber);
+                                sb2.AppendLine(String.Format("#{0}||{1}||", name.Substring(0, temp == -1 ? name.Length : temp), MD5));
+                            }
+                            
+                        }
+                    }
+                }
+                TextBlock1.Text +=  (sb.ToString());
+                TextBlock2.Text +=  (sb2.ToString());
+            }
+        }
+
+        private void TextBlock_DropOver(object sender, DragEventArgs e)
         {
             if (e.Data.GetDataPresent(DataFormats.FileDrop))
             {
@@ -39,60 +122,6 @@ namespace Minecraft_updater
             e.Handled = false;
         }
 
-        private void RichTextBox_Drop(object sender, DragEventArgs e)
-        {
-            if (e.Data.GetDataPresent(DataFormats.FileDrop))
-            {
-                richTextBox.Document.Blocks.Clear();
-                string[] docPath = (string[])e.Data.GetData(DataFormats.FileDrop);
-
-                // By default, open as Rich Text (RTF).  
-                var dataFormat = DataFormats.Rtf;
-
-                // If the Shift key is pressed, open as plain text.  
-                if (e.KeyStates == DragDropKeyStates.ShiftKey)
-                {
-                    dataFormat = DataFormats.Text;
-                }
-                string name, MD5, URL;
-                StringBuilder sb = new StringBuilder();
-                foreach (string path in docPath)
-                {
-
-                    if (File.Exists(path))
-                    {
-                        name = System.IO.Path.GetFileName(path);
-                        MD5 = Private_Function.GetMD5(path);
-                        URL = textBox.Text + name;
-                        sb.Append(String.Format("{0}||.minecraft\\{1}||{2}||{3}||{4}", name, "", MD5,false, URL));
-                        sb.Append("\r\n");
-                    }
-                    else if (Directory.Exists(path))
-                    {
-                        DirectoryInfo di = new DirectoryInfo(path);
-                        foreach (var fi in di.EnumerateFiles("*",SearchOption.AllDirectories))
-                        {
-                            name = System.IO.Path.GetFileName(fi.FullName);
-                            MD5 = Private_Function.GetMD5(fi.FullName);
-                            URL = textBox.Text + Path.GetFileName(path) + fi.FullName.Substring(path.Length).Replace("\\","/");
-                             sb.Append(String.Format("{0}||.minecraft\\{1}||{2}||{3}||{4}"
-                                , name
-                                , Path.GetFileName(path) + fi.FullName.Substring(path.Length, (fi.FullName.Length - path.Length)-fi.Name.Length)
-                                , MD5
-                                , Path.GetDirectoryName(fi.FullName).ToLower().Equals("mods")?checkBox.IsChecked:false
-                                , URL ));
-                            sb.Append("\r\n");
-                            Debug.Print(Path.GetFileName(path));
-                        }
-                    }
-                    else
-                    {
-
-                    }
-                }
-                richTextBox.AppendText(sb.ToString());
-            }
-        }
 
         private void textbox_TextChange(object sender, TextChangedEventArgs e)
         {
@@ -108,7 +137,8 @@ namespace Minecraft_updater
             if (saveFileDialog1.FileName != "")
             {
                 StreamWriter r = new StreamWriter(saveFileDialog1.OpenFile(), Encoding.UTF8);
-                r.Write(new TextRange(richTextBox.Document.ContentStart, richTextBox.Document.ContentEnd).Text);
+                r.WriteLine(TextBlock1.Text);
+                r.WriteLine(TextBlock2.Text);
                 r.Flush();
                 r.Close();
             }
@@ -121,6 +151,15 @@ namespace Minecraft_updater
             if (ini.IniReadValue("Minecraft_updater", "LogFile").ToLower() == "true")
                 Log.LogFile = true;
             this.textBox.TextChanged += new System.Windows.Controls.TextChangedEventHandler(this.textbox_TextChange);
+        }
+
+        private void Clear(object sender, RoutedEventArgs e)
+        {
+            Button b = (Button)sender;
+            if (b == Button1)
+                TextBlock1.Text = "";
+            else
+                TextBlock2.Text = "";
         }
     }
 }

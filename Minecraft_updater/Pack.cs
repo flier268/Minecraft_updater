@@ -1,103 +1,34 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Text.RegularExpressions;
-using System.Threading.Tasks;
+﻿using System.Text.RegularExpressions;
 
 namespace Minecraft_updater
 {
     public struct Pack
     {
-        string _name, _MD5, _URL,_subfolder;
-        bool _searchFuzzy,isChecked;
-        public string MD5
-        {
-            get
-            {
-                return _MD5;
-            }
-
-            set
-            {
-                _MD5 = value;
-            }
-        }
-
-        public string Name
-        {
-            get
-            {
-                return _name;
-            }
-
-            set
-            {
-                _name = value;
-            }
-        }
-
-        public string URL
-        {
-            get
-            {
-                return _URL;
-            }
-
-            set
-            {
-                _URL = value;
-            }
-        }
-
-        public bool IsChecked
-        {
-            get
-            {
-                return isChecked;
-            }
-
-            set
-            {
-                isChecked = value;
-            }
-        }
-
-        public string Subfolder
-        {
-            get
-            {
-                return _subfolder;
-            }
-
-            set
-            {
-                _subfolder = value;
-            }
-        }
-
-        public bool SearchFuzzy
-        {
-            get
-            {
-                return _searchFuzzy;
-            }
-
-            set
-            {
-                _searchFuzzy = value;
-            }
-        }
+        string _MD5, _URL, _Path;
+        bool isChecked, delete;
+        public bool Delete { get => delete; set => delete = value; }
+        public string MD5 { get => _MD5; set => _MD5 = value; }
+        public string URL { get => _URL; set => _URL = value; }
+        public string Path { get => _Path; set => _Path = value; }
+        public bool IsChecked { get => isChecked; set => isChecked = value; }
     }
     public static class Packs
     {
-        static Regex r = new Regex("(.*?)\\|\\|(.*?)\\|\\|(.*?)\\|\\|(.*?)\\|\\|(.*)", RegexOptions.Singleline);
+        static Regex r = new Regex("(.*?)\\|\\|(.*?)\\|\\|(.*)", RegexOptions.Singleline);
         public static Pack reslove(string s)
         {
-            Match m = r.Match(s);
+            Match m;
+            bool delete = false;
+            if (s.StartsWith("#"))
+            {
+                delete = true;
+                m = r.Match(s.Substring(1, s.Length - 1));
+            }
+            else
+                m = r.Match(s);
             if (m.Success)
             {
-                return new Pack { Name = m.Groups[1].ToString(), Subfolder = m.Groups[2].ToString(), MD5 = ((m.Groups[3] == null) ? "" : m.Groups[3].ToString()), SearchFuzzy= Boolean.Parse(m.Groups[4].ToString()), URL = ((m.Groups[4] == null) ? "" : m.Groups[5].ToString()), IsChecked = false };
+                return new Pack { Path = m.Groups[1].ToString(), MD5 = ((m.Groups[2] == null) ? "" : m.Groups[2].ToString()), URL = ((m.Groups[3] == null) ? "" : m.Groups[3].ToString()), Delete = delete, IsChecked = false };
             }
             else
                 return new Pack { };

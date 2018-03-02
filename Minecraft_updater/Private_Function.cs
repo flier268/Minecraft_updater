@@ -1,5 +1,8 @@
 ﻿using System;
 using System.IO;
+using System.Net;
+using System.Security.Cryptography;
+using System.Windows.Media;
 
 namespace Minecraft_updater
 {
@@ -8,19 +11,22 @@ namespace Minecraft_updater
         #region 私人方法
         public static string GetMD5(string filepath)
         {
-            var tragetFile = new System.IO.FileStream(filepath, System.IO.FileMode.Open);
-            var md5 = new System.Security.Cryptography.MD5CryptoServiceProvider();
-            byte[] hashbytes = md5.ComputeHash(tragetFile);
-            tragetFile.Close();
-
-            System.Text.StringBuilder sb = new System.Text.StringBuilder();
-            for (int i = 0; i < hashbytes.Length; i++)
+            using (var tragetFile = new System.IO.FileStream(filepath, System.IO.FileMode.Open,FileAccess.Read))
             {
-                sb.Append(hashbytes[i].ToString("x2"));
-            }
-            return (sb.ToString().ToUpper());
+                MD5 m = MD5.Create();                
+                return ByteToString(m.ComputeHash(tragetFile));
+            }          
         }
-
+        static System.Text.StringBuilder sb = new System.Text.StringBuilder();
+        private static string ByteToString(byte[] b)
+        {
+            sb.Clear();
+            foreach (var i in b)
+            {
+                sb.Append(i.ToString("x2"));
+            }
+            return (sb.ToString().ToUpper()); 
+        }
         /// <summary>
         /// 建立一暫存檔案
         /// </summary>
@@ -62,8 +68,7 @@ namespace Minecraft_updater
                 // Delete the temp file (if it exists)
                 if (File.Exists(tmpFile))
                 {
-                    File.Delete(tmpFile);
-                    Console.WriteLine("TEMP file deleted.");
+                    File.Delete(tmpFile);                  
                 }
             }
             catch (Exception ex)
@@ -72,7 +77,23 @@ namespace Minecraft_updater
             }
         }
 
-
+        public static bool DownloadFile(string url, string path, string log)
+        {
+            using (WebClient myWebClient = new WebClient())
+            {
+                try
+                {
+                    Log.AddLine(log, Colors.Black);
+                    if (!Directory.Exists(Path.GetDirectoryName(path)))
+                        Directory.CreateDirectory(Path.GetDirectoryName(path));
+                    if (File.Exists(path))
+                        File.Delete(path);
+                    myWebClient.DownloadFile(Uri.EscapeUriString(Uri.UnescapeDataString( url)), path);
+                    return true;
+                }
+                catch (Exception e) { Log.AddLine(String.Format("出現以下錯誤:{0}", Path.GetFileName(path) + e.Message), Colors.Red); return false; }
+            }
+        }
         #endregion
     }
 }
