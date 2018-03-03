@@ -35,7 +35,7 @@ namespace Minecraft_updater
                     return;
                 }
                 if (textBlock.Text.Trim() != "")
-                    switch (MessageBox.Show("", "", MessageBoxButton.YesNoCancel))
+                    switch (MessageBox.Show("不清除直接加入到最後?", "已經含有資料", MessageBoxButton.YesNoCancel))
                     {
                         case MessageBoxResult.No:
                             textBlock.Text = "";
