@@ -136,7 +136,15 @@ namespace Minecraft_updater
                 List<string> files = di.EnumerateFiles("*", SearchOption.AllDirectories).Select(x => x.FullName).ToList<string>();
                 //刪除檔案
                 var templist = list.Where(x => x.Delete).ToList();
-                templist.ForEach(x => files.Where(y => y.Substring(AppPath.Length+1).StartsWith(x.Path)).ToList().ForEach(z =>
+                char[] Delimiter = new char[] { '+', '-', '_' };
+                templist.ForEach(x => files.Where(y =>
+                {
+                    string temp = y.Substring(AppPath.Length + 1);
+                    if (temp.Length > x.Path.Length + 1 && Delimiter.Contains(temp[x.Path.Length + 1]) && temp.StartsWith(x.Path))
+                        return true;
+                    else
+                        return false;
+                }).ToList().ForEach(z =>
                 {
                     if (Private_Function.GetMD5(z) != x.MD5)
                     {
