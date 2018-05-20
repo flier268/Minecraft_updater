@@ -17,9 +17,10 @@ namespace Minecraft_updater
         public updatepackMaker()
         {
             InitializeComponent();
+            this.Title = String.Format("Minecraft updater   v{0}", System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString());
         }
         IniFile ini = new IniFile(Path.Combine(System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location), "config.ini"));
-        char[] listAllNumber = new char[10] { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9' };
+        char[] Delimiter = new char[] { '+', '-', '_'};
         List<Pack> list = new List<Pack>();
 
 
@@ -63,13 +64,13 @@ namespace Minecraft_updater
                             sb.AppendLine(String.Format("{0}||{1}||{2}", name, MD5, URL));
                             if ((addmodtodelete && name.Contains("mod")) || (addconfigtodelete && name.Contains("config")))
                             {
-                                int temp = name.IndexOfAny(listAllNumber);
+                                int temp = name.IndexOfAny(Delimiter);
                                 sb2.AppendLine(String.Format("#{0}||{1}||", name.Substring(0, temp == -1 ? name.Length : temp), MD5));
                             }
                         }
                         else
                         {
-                            int temp = name.IndexOfAny(listAllNumber);
+                            int temp = name.IndexOfAny(Delimiter);
                             sb2.AppendLine(String.Format("#{0}||{1}||", name.Substring(0, temp == -1 ? name.Length : temp), MD5));
                         }
                         
@@ -91,13 +92,13 @@ namespace Minecraft_updater
                                    , URL));
                                 if ((addmodtodelete && name.Contains("mod")) || (addconfigtodelete && name.Contains("config")))
                                 {
-                                    int temp = name.IndexOfAny(listAllNumber);
+                                    int temp = name.IndexOfAny(Delimiter);
                                     sb2.AppendLine(String.Format("#{0}||{1}||", name.Substring(0, temp == -1 ? name.Length : temp), MD5));
                                 }
                             }
                             else
                             {
-                                int temp = name.IndexOfAny(listAllNumber);
+                                int temp = name.IndexOfAny(Delimiter);
                                 sb2.AppendLine(String.Format("#{0}||{1}||", name.Substring(0, temp == -1 ? name.Length : temp), MD5));
                             }
                             

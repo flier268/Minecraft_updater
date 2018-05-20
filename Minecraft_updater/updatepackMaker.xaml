@@ -4,7 +4,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
-        Title="updatepackMaker" Height="468.958" Width="614.698" Loaded="Window_Load">
+        Height="470" Width="615" Loaded="Window_Load" ResizeMode="NoResize">
     <Grid Margin="0,0,2,-2" >
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="29*"/>

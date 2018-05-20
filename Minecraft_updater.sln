@@ -1,22 +1,31 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.27130.2036
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Minecraft_updater", "Minecraft_updater\Minecraft_updater.csproj", "{BDCF29E0-0D59-4219-97B8-ED50B1E74346}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Check_Update|Any CPU = Check_Update|Any CPU
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU
+		updatepackMaker|Any CPU = updatepackMaker|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{BDCF29E0-0D59-4219-97B8-ED50B1E74346}.Check_Update|Any CPU.ActiveCfg = Check_Update|Any CPU
+		{BDCF29E0-0D59-4219-97B8-ED50B1E74346}.Check_Update|Any CPU.Build.0 = Check_Update|Any CPU
 		{BDCF29E0-0D59-4219-97B8-ED50B1E74346}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{BDCF29E0-0D59-4219-97B8-ED50B1E74346}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BDCF29E0-0D59-4219-97B8-ED50B1E74346}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{BDCF29E0-0D59-4219-97B8-ED50B1E74346}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BDCF29E0-0D59-4219-97B8-ED50B1E74346}.updatepackMaker|Any CPU.ActiveCfg = updatepackMaker|Any CPU
+		{BDCF29E0-0D59-4219-97B8-ED50B1E74346}.updatepackMaker|Any CPU.Build.0 = updatepackMaker|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {AED606AB-D8FB-4914-B647-91C1CB11699B}
 	EndGlobalSection
 EndGlobal

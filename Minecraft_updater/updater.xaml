@@ -4,12 +4,11 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Minecraft_updater"
-        mc:Ignorable="d"
-        Title="updater" Height="158.843" Width="257" Loaded="Window_Loaded">
+        mc:Ignorable="d" Height="158.843"  Loaded="Window_Loaded" ResizeMode="NoResize" SizeToContent="WidthAndHeight">
     <Grid Margin="0,0,0,2">
-        <ProgressBar x:Name="progressBar" HorizontalAlignment="Left" Height="20" Margin="10,20,0,0" VerticalAlignment="Top" Width="229"/>
-        <Label x:Name="label" Content="目前進度：" HorizontalAlignment="Left" Margin="10,45,0,0" VerticalAlignment="Top"/>
-        <Label x:Name="label1" Content="" HorizontalAlignment="Left" Margin="85,45,0,0" VerticalAlignment="Top" Width="154"/>
+        <ProgressBar x:Name="progressBar" HorizontalAlignment="Left" Height="20" Margin="10,20,10,0" VerticalAlignment="Top" MinWidth="260"/>
+        <Label x:Name="label" Content="目前進度：" HorizontalAlignment="Left" Margin="10,45,0,20" VerticalAlignment="Top"/>
+        <Label x:Name="label1" Content="" HorizontalAlignment="Left" Margin="85,45,0,20" VerticalAlignment="Top" Width="154"/>
 
     </Grid>
 </Window>

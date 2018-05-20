@@ -19,8 +19,9 @@ namespace Minecraft_updater
         string URL = "";
         public updater()
         {
-            this.URL = ini.IniReadValue("Minecraft_updater", "scUrl");
+            this.URL = ini.IniReadValue("Minecraft_updater", "scUrl");            
             InitializeComponent();
+            this.Title = String.Format("Minecraft updater   v{0}", System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString());
         }
         private string _AppPath = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
 
@@ -133,12 +134,9 @@ namespace Minecraft_updater
             {
                 DirectoryInfo di = new DirectoryInfo(AppPath);
                 List<string> files = di.EnumerateFiles("*", SearchOption.AllDirectories).Select(x => x.FullName).ToList<string>();
-
-
-
                 //刪除檔案
                 var templist = list.Where(x => x.Delete).ToList();
-                templist.ForEach(x => files.Where(y => y.StartsWith(x.Path)).ToList().ForEach(z =>
+                templist.ForEach(x => files.Where(y => y.Substring(AppPath.Length+1).StartsWith(x.Path)).ToList().ForEach(z =>
                 {
                     if (Private_Function.GetMD5(z) != x.MD5)
                     {
@@ -150,7 +148,7 @@ namespace Minecraft_updater
 
                 //新增/取代檔案
                 templist = list.Where(x => !x.Delete).ToList();
-                string AppDicPath=Path.GetDirectoryName(AppPath);
+                string AppDicPath=AppPath;
                 string filepath ;
                 
                 foreach (var temp in templist)
@@ -158,6 +156,8 @@ namespace Minecraft_updater
                     filepath = Path.Combine(AppDicPath, temp.Path);                    
                     if ((File.Exists(filepath) && (Private_Function.GetMD5(filepath) != temp.MD5)) || !File.Exists(filepath))
                     {
+                        if(!File.Exists(filepath))
+                            Log.AddLine(String.Format("{0}不存在，檢查最新版本", filepath), Colors.Black);
                         if (Private_Function.DownloadFile(temp.URL, Path.Combine(AppPath, temp.Path), String.Format("{0}需要更新，開始下載更新...", Path.GetFileName(temp.Path))))
                         {
                             Log.AddLine(String.Format("{0}更新完成", "\\mods" + temp.Path + Path.GetFileName(temp.Path)), Colors.Black);
@@ -200,11 +200,6 @@ namespace Minecraft_updater
             }
             else
                 MessageBox.Show("同步完成");
-
-
-
         }
-
-
     }
 }

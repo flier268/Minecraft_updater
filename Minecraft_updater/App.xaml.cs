@@ -14,8 +14,7 @@ namespace Minecraft_updater
     {
         public static List<String> Args = new List<string>();
         protected override void OnStartup(StartupEventArgs e)
-        {
-            
+        {            
             Args = e.Args.ToList();
             if (Args.Count > 0)
             {
