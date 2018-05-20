@@ -132,11 +132,12 @@ namespace Minecraft_updater
         private void button_savefile_Click(object sender, RoutedEventArgs e)
         {
             SaveFileDialog saveFileDialog1 = new SaveFileDialog();
+            saveFileDialog1.FileName = "updatePackList.sc";
             saveFileDialog1.Filter = "sc|*.sc";
             saveFileDialog1.Title = "Save an sc File";
             saveFileDialog1.ShowDialog();
             if (saveFileDialog1.FileName != "")
-            {
+            {                
                 StreamWriter r = new StreamWriter(saveFileDialog1.OpenFile(), Encoding.UTF8);
                 r.WriteLine(TextBlock1.Text);
                 r.WriteLine(TextBlock2.Text);
