@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -113,10 +114,6 @@ namespace Minecraft_updater
                 TextBlock3.Text += (sb3.ToString());
             }
         }
-        private void AddToTextBlock1()
-        {
-
-        }
         private void TextBlock_DropOver(object sender, DragEventArgs e)
         {
             if (e.Data.GetDataPresent(DataFormats.FileDrop))
@@ -169,6 +166,47 @@ namespace Minecraft_updater
                 TextBlock1.Text = "";
             else
                 TextBlock2.Text = "";
+        }
+
+        private void LoadList(object sender, RoutedEventArgs e)
+        {
+            OpenFileDialog openFileDialog = new OpenFileDialog();
+            openFileDialog.Filter = "sc|*.sc";
+            openFileDialog.FileName = "updatePackList.sc";
+            openFileDialog.Title = "Select a old sc File";
+            if (openFileDialog.ShowDialog() == true)
+            {
+                Regex r = new Regex("(.*?)\\|\\|(.*?)\\|\\|(.*)", RegexOptions.Singleline);
+                StringBuilder stringBuilder1 = new StringBuilder();
+                StringBuilder stringBuilder2 = new StringBuilder();
+                StringBuilder stringBuilder3 = new StringBuilder();
+                using (StreamReader streamReader = new StreamReader(openFileDialog.FileName))
+                {
+                    while (!streamReader.EndOfStream)
+                    {
+                        string s = streamReader.ReadLine();
+                        if (s.StartsWith("#"))
+                        {
+                            stringBuilder2.AppendLine(s);
+                        }
+                        else if (s.StartsWith(":"))
+                        {
+                            stringBuilder3.AppendLine(s);
+                        }
+                        else
+                        {
+                            Match m = r.Match(s);
+                            if (m.Success)
+                            {
+                                stringBuilder1.AppendLine(s);
+                            }
+                        }
+                    }
+                }
+                TextBlock1.Text = stringBuilder1.ToString();
+                TextBlock2.Text = stringBuilder2.ToString();
+                TextBlock3.Text = stringBuilder3.ToString();
+            }
         }
     }
 }

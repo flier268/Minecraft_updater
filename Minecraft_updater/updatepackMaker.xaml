@@ -14,7 +14,11 @@
             <RowDefinition Height="auto"/>
             <RowDefinition Height="auto"/>
         </Grid.RowDefinitions>
-        <Menu Grid.Row="0" Visibility="Hidden"/>
+        <Menu Grid.Row="0" Background="#00000000" Margin="0,0,0,10">
+            <MenuItem Header="Files">
+                <MenuItem Header="Load" Click="LoadList"/>
+            </MenuItem>
+        </Menu>
 
         <DockPanel Grid.Row="1">
             <TextBox x:Name="textBox" TextWrapping="Wrap" Text="http://aaa.bb.com/" Width="380" AllowDrop="False"/>
