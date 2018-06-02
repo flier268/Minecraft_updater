@@ -145,9 +145,6 @@ namespace Minecraft_updater
 
             //刪除暫存
             Private_Function.DeleteTmpFile(tempfile);
-
-
-
             int totalCount = list.Where(x => !x.Delete).ToList().Count;
             Log.AddLine(String.Format("Minecraft的Mod清單下載完成，在清單上共有{0}個檔案...", totalCount), Colors.Black);
             CrossThread_EditeLabelContent(label1, String.Format("0/{0}", totalCount));
@@ -178,16 +175,15 @@ namespace Minecraft_updater
                 }));
 
                 //新增/取代檔案
-                templist = list.Where(x => !x.Delete).ToList();
-                string AppDicPath=AppPath;
+                templist = list.Where(x => !x.Delete && !x.DownloadWhenNotExist).ToList();                
                 string filepath ;
-                
                 foreach (var temp in templist)
                 {
-                    filepath = Path.Combine(AppDicPath, temp.Path);                    
-                    if ((File.Exists(filepath) && (Private_Function.GetMD5(filepath) != temp.MD5)) || !File.Exists(filepath))
+                    filepath = Path.Combine(AppPath, temp.Path);
+                    if ((File.Exists(filepath) && (temp.DownloadWhenNotExist || (Private_Function.GetMD5(filepath) != temp.MD5)))
+                        || !File.Exists(filepath))
                     {
-                        if(!File.Exists(filepath))
+                        if (!File.Exists(filepath))
                             Log.AddLine(String.Format("{0}不存在，檢查最新版本", filepath), Colors.Black);
                         if (Private_Function.DownloadFile(temp.URL, Path.Combine(AppPath, temp.Path), String.Format("{0}需要更新，開始下載更新...", Path.GetFileName(temp.Path))))
                         {
@@ -216,8 +212,7 @@ namespace Minecraft_updater
                         else
                             haveUpdate++;
                     }
-                }                
-
+                }
                 Log.AddLine("同步完成！", Colors.Green);
                 haveUpdate = totalCount;
                 CrossThread_EditeLabelContent(label1, String.Format("{0}/{1}", haveUpdate, totalCount));

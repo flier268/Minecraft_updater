@@ -27,7 +27,7 @@ namespace Minecraft_updater
 
         private void TextBlock_Drop(object sender, DragEventArgs e)
         {
-            TextBlock textBlock = ((TextBlock)sender).Name == TextBlock1.Name ? TextBlock1 : TextBlock2;
+            TextBlock textBlock = ((TextBlock)e.Source);
             if (e.Data.GetDataPresent(DataFormats.FileDrop))
             {
                 if (!((string[])e.Data.GetData(DataFormats.FileDrop))[0].StartsWith(AppDomain.CurrentDomain.BaseDirectory))
@@ -49,9 +49,16 @@ namespace Minecraft_updater
                 string[] docPath = (string[])e.Data.GetData(DataFormats.FileDrop);
                 int basepathLength = AppDomain.CurrentDomain.BaseDirectory.Length;
                 string name, MD5, URL;
-                StringBuilder sb = new StringBuilder(), sb2 = new StringBuilder();
+                StringBuilder sb = new StringBuilder(), sb2 = new StringBuilder(), sb3 = new StringBuilder();
                 bool addmodtodelete = checkbox_addmodtodelete.IsChecked.Value;
                 bool addconfigtodelete = checkbox_addconfigtodelete.IsChecked.Value;
+                int TextblockIndex = -1;
+                if (textBlock.Equals(TextBlock1))
+                    TextblockIndex = 0;
+                else if (textBlock.Equals(TextBlock2))
+                    TextblockIndex = 1;
+                else if (textBlock.Equals(TextBlock3))
+                    TextblockIndex = 2;
                 foreach (string path in docPath)
                 {
                     if (File.Exists(path))
@@ -59,22 +66,21 @@ namespace Minecraft_updater
                         name = path.Substring(basepathLength, path.Length - basepathLength);
                         MD5 = Private_Function.GetMD5(path);
                         URL = textBox.Text + name;
-                        if (textBlock.Equals(TextBlock1))
+                        int temp = name.IndexOfAny(Delimiter);
+                        switch (TextblockIndex)
                         {
-                            sb.AppendLine(String.Format("{0}||{1}||{2}", name, MD5, URL));
-                            if ((addmodtodelete && name.Contains("mod")) || (addconfigtodelete && name.Contains("config")))
-                            {
-                                int temp = name.IndexOfAny(Delimiter);
+                            case 0:
+                                sb.AppendLine(String.Format("{0}||{1}||{2}", name, MD5, URL));
+                                if ((addmodtodelete && name.Contains("mod")) || (addconfigtodelete && name.Contains("config")))
+                                    sb2.AppendLine(String.Format("#{0}||{1}||", name.Substring(0, temp == -1 ? name.Length : temp), MD5));
+                                break;
+                            case 1:
                                 sb2.AppendLine(String.Format("#{0}||{1}||", name.Substring(0, temp == -1 ? name.Length : temp), MD5));
-                            }
+                                break;
+                            case 2:
+                                sb3.AppendLine(String.Format(":{0}||{1}||{2}", name.Substring(0, temp == -1 ? name.Length : temp), MD5, URL));
+                                break;
                         }
-                        else
-                        {
-                            int temp = name.IndexOfAny(Delimiter);
-                            sb2.AppendLine(String.Format("#{0}||{1}||", name.Substring(0, temp == -1 ? name.Length : temp), MD5));
-                        }
-                        
-
                     }
                     else if (Directory.Exists(path))
                     {
@@ -84,32 +90,33 @@ namespace Minecraft_updater
                             name = fi.FullName.Substring(basepathLength, fi.FullName.Length - basepathLength);
                             MD5 = Private_Function.GetMD5(fi.FullName);
                             URL = textBox.Text + Path.GetFileName(path) + fi.FullName.Substring(path.Length).Replace("\\", "/");
-                            if (textBlock.Equals(TextBlock1))
+                            int temp = name.IndexOfAny(Delimiter);
+                            switch (TextblockIndex)
                             {
-                                sb.AppendLine(String.Format("{0}||{1}||{2}"
-                                   , name
-                                   , MD5
-                                   , URL));
-                                if ((addmodtodelete && name.Contains("mod")) || (addconfigtodelete && name.Contains("config")))
-                                {
-                                    int temp = name.IndexOfAny(Delimiter);
+                                case 0:
+                                    sb.AppendLine(String.Format("{0}||{1}||{2}", name, MD5, URL));
+                                    if ((addmodtodelete && name.Contains("mod")) || (addconfigtodelete && name.Contains("config")))
+                                        sb2.AppendLine(String.Format("#{0}||{1}||", name.Substring(0, temp == -1 ? name.Length : temp), MD5));
+                                    break;
+                                case 1:
                                     sb2.AppendLine(String.Format("#{0}||{1}||", name.Substring(0, temp == -1 ? name.Length : temp), MD5));
-                                }
+                                    break;
+                                case 2:
+                                    sb3.AppendLine(String.Format(":{0}||{1}||{2}", name.Substring(0, temp == -1 ? name.Length : temp), MD5, URL));
+                                    break;
                             }
-                            else
-                            {
-                                int temp = name.IndexOfAny(Delimiter);
-                                sb2.AppendLine(String.Format("#{0}||{1}||", name.Substring(0, temp == -1 ? name.Length : temp), MD5));
-                            }
-                            
                         }
                     }
                 }
-                TextBlock1.Text +=  (sb.ToString());
-                TextBlock2.Text +=  (sb2.ToString());
+                TextBlock1.Text += (sb.ToString());
+                TextBlock2.Text += (sb2.ToString());
+                TextBlock3.Text += (sb3.ToString());
             }
         }
+        private void AddToTextBlock1()
+        {
 
+        }
         private void TextBlock_DropOver(object sender, DragEventArgs e)
         {
             if (e.Data.GetDataPresent(DataFormats.FileDrop))
