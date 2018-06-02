@@ -1,10 +1,14 @@
 ﻿using InI_File_Merger;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -14,14 +18,32 @@ namespace Minecraft_updater
     /// <summary>
     /// update.xaml 的互動邏輯
     /// </summary>
-    public partial class updater : Window
+    public partial class updater : Window, INotifyPropertyChanged
     {
         string URL = "";
+        /// <summary>
+        /// -1=未檢查  0=沒有更新   1=需要更新
+        /// </summary>
+        int HaveNewVersion = -1;
         public updater()
         {
+            DataContext = this;
             this.URL = ini.IniReadValue("Minecraft_updater", "scUrl");            
             InitializeComponent();
-            this.Title = String.Format("Minecraft updater   v{0}", System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString());
+            var task = Task.Run(() =>
+            {
+                if (App.CheckUpdate())
+                {
+                    UpdateInfoText = "發現Minecraft Updater的更新，點擊這裡前往Github下載更新";
+                    HaveNewVersion = 1;
+                }
+                else
+                {
+                    UpdateInfoText = "已經是最新版本";
+                    HaveNewVersion = 0;
+                }
+            });
+                this.Title = String.Format("Minecraft updater   v{0}", System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString());
         }
         private string _AppPath = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
 
@@ -108,14 +130,15 @@ namespace Minecraft_updater
                     myWebClient.DownloadFile(URL, tempfile);
                 }
                 CrossThread_EditeLabelContent(label1, String.Format("解析中..."));
-                StreamReader reader = new StreamReader(tempfile);
-                while (!reader.EndOfStream)
+                using (StreamReader reader = new StreamReader(tempfile, Encoding.UTF8))
                 {
-                    string temp = reader.ReadLine();
-                    if (temp != "")
-                        list.Add(Packs.reslove(temp));
+                    while (!reader.EndOfStream)
+                    {
+                        string temp = reader.ReadLine();
+                        if (temp != "")
+                            list.Add(Packs.reslove(temp));
+                    }
                 }
-                reader.Close();
             }
             catch (System.Net.WebException e) { Log.AddLine(String.Format("取得最新最新PackList時失敗，出現以下訊息：{0}", e.Message), Colors.Red); }
             catch (Exception e) { Log.AddLine(String.Format("取得最新PackList時失敗，出現以下訊息：{0}", e.Message), Colors.Red); }
@@ -204,10 +227,27 @@ namespace Minecraft_updater
 
             if (AutoClose_AfterFinishd)
             {
-                CrossThread_Close();
+                SpinWait.SpinUntil(() => HaveNewVersion > -1, 5000);
+                if (HaveNewVersion != 1)
+                    CrossThread_Close();
             }
             else
                 MessageBox.Show("同步完成");
+        }
+
+        private string _UpdateInfoText;
+        public string UpdateInfoText { get => _UpdateInfoText; set { _UpdateInfoText = value;OnPropertyChanged("UpdateInfoText"); } }
+
+
+        public event PropertyChangedEventHandler PropertyChanged;
+        protected void OnPropertyChanged(string name)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+        }
+
+        private void Label_MouseUp(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            Process.Start("https://github.com/flier268/Minecraft_updater/releases");
         }
     }
 }

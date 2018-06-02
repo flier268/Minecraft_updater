@@ -2,7 +2,11 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Net.Http;
+using System.Reflection;
 using System.Text;
+using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using System.Windows;
 
 namespace Minecraft_updater
@@ -51,7 +55,46 @@ namespace Minecraft_updater
             }
             base.OnStartup(e);
         }
+        /// <summary>
+        /// 檢查是否有更新
+        /// </summary>
+        /// <returns>true: 需要更新  false: 不需要更新</returns>
+        public static bool CheckUpdate()
+        {
+            try
+            {
+                using (var client = new HttpClient())
+                {
+                    var response = client.GetAsync("https://raw.githubusercontent.com/flier268/Minecraft_updater/master/Minecraft_updater/Properties/AssemblyInfo.cs").Result;
 
+                    if (response.IsSuccessStatusCode)
+                    {
+                        // by calling .Result you are performing a synchronous call
+                        var responseContent = response.Content;
+
+                        // by calling .Result you are synchronously reading the result
+                        string responseString = responseContent.ReadAsStringAsync().Result;
+                        Regex r = new Regex(@"^\[assembly: AssemblyVersion.*?([\d|\.]+).*?\]", RegexOptions.IgnoreCase | RegexOptions.Multiline);
+                        var m = r.Match(responseString);
+
+                        Version ver = new Version(m.Groups[1].ToString());
+                        Version verson = Assembly.GetEntryAssembly().GetName().Version;
+                        int tm = verson.CompareTo(ver);
+
+                        if (tm >= 0)
+                        {
+                            return false;
+                        }
+                        else
+                        {
+                            return true;
+                        }
+                    }
+                }
+            }
+            catch {}
+            return false;
+        }
         void Update()
         {
             ProcessStartInfo startInfo = new ProcessStartInfo(System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location) + "\\AutoUpdater.exe");
