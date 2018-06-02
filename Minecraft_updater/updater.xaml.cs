@@ -140,7 +140,7 @@ namespace Minecraft_updater
                 templist.ForEach(x => files.Where(y =>
                 {
                     string temp = y.Substring(AppPath.Length + 1);
-                    if (temp.Length > x.Path.Length + 1 && Delimiter.Contains(temp[x.Path.Length + 1]) && temp.StartsWith(x.Path))
+                    if (temp.Length > x.Path.Length + 1 && Delimiter.Contains(temp[x.Path.Length]) && temp.StartsWith(x.Path))
                         return true;
                     else
                         return false;
