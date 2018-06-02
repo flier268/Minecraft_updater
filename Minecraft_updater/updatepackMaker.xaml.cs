@@ -145,6 +145,7 @@ namespace Minecraft_updater
                 StreamWriter r = new StreamWriter(saveFileDialog1.OpenFile(), Encoding.UTF8);
                 r.WriteLine(TextBlock1.Text);
                 r.WriteLine(TextBlock2.Text);
+                r.WriteLine(TextBlock3.Text);
                 r.Flush();
                 r.Close();
             }
