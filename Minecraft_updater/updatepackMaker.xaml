@@ -4,7 +4,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d" Topmost="True"
-        Width="620" Loaded="Window_Load" ResizeMode="NoResize" SizeToContent="WidthAndHeight" Height="660">
+        Width="620" Loaded="Window_Load" SizeToContent="WidthAndHeight" ResizeMode="CanMinimize" >
     <Grid Margin="5" >
         <Grid.RowDefinitions>
             <RowDefinition Height="auto"/>

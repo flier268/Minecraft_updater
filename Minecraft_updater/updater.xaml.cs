@@ -25,25 +25,13 @@ namespace Minecraft_updater
         /// -1=未檢查  0=沒有更新   1=需要更新
         /// </summary>
         int HaveNewVersion = -1;
+        App.UpdateMessage updateMessage = new App.UpdateMessage();
         public updater()
         {
             DataContext = this;
-            this.URL = ini.IniReadValue("Minecraft_updater", "scUrl");            
-            InitializeComponent();
-            var task = Task.Run(() =>
-            {
-                if (App.CheckUpdate())
-                {
-                    UpdateInfoText = "發現Minecraft Updater的更新，點擊這裡前往Github下載更新";
-                    HaveNewVersion = 1;
-                }
-                else
-                {
-                    UpdateInfoText = "已經是最新版本";
-                    HaveNewVersion = 0;
-                }
-            });
-                this.Title = String.Format("Minecraft updater   v{0}", System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString());
+            this.URL = ini.IniReadValue("Minecraft_updater", "scUrl");
+            InitializeComponent();            
+            this.Title = String.Format("Minecraft updater   v{0}", System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString());
         }
         private string _AppPath = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
 
@@ -72,10 +60,37 @@ namespace Minecraft_updater
                 AutoClose_AfterFinishd = true;
             if (ini.IniReadValue("Minecraft_updater", "LogFile").ToLower() == "true")
                 Log.LogFile = true;
+            CheckUpdate();
+            SpinWait.SpinUntil(() => HaveNewVersion > -1, 10000);
+            if (updateMessage.HaveUpdate)
+            {
+                Window_UpdateSelf window_UpdateSelf = new Window_UpdateSelf(updateMessage);
+                window_UpdateSelf.ShowDialog();
+            }
             ThreadPool.QueueUserWorkItem(new WaitCallback(CheckPack));
-            //CheckPack("");
         }
-
+        private void CheckUpdate()
+        {
+            Log.AddLine("檢查Minecraft updater是否有更新...", Colors.Black);
+            CrossThread_EditeLabelContent(label1, "檢查Minecraft updater是否有更新...");
+            var task = Task.Run(() =>
+            {
+                string filename = Process.GetCurrentProcess().MainModule.FileName;
+                string tempfilename = Path.GetFileNameWithoutExtension(filename) + ".temp" + Path.GetExtension(filename);
+                if (File.Exists(tempfilename))
+                    File.Delete(tempfilename);
+                updateMessage = App.CheckUpdate();
+                if (updateMessage.HaveUpdate)
+                {
+                    HaveNewVersion = 1;
+                }
+                else
+                {
+                    UpdateInfoText = "已經是最新版本";
+                    HaveNewVersion = 0;
+                }
+            });
+        }
 
 
         #region 跨執行緒存取UI
@@ -160,7 +175,7 @@ namespace Minecraft_updater
                 templist.ForEach(x => files.Where(y =>
                 {
                     string temp = y.Substring(AppPath.Length + 1);
-                    if (temp.Length > x.Path.Length + 1 && Delimiter.Contains(temp[x.Path.Length]) && temp.StartsWith(x.Path))
+                    if (temp.Length > x.Path.Length + 1 && Delimiter.Contains(temp[x.Path.Length]) && temp.StartsWith(x.Path,StringComparison.InvariantCultureIgnoreCase))
                         return true;
                     else
                         return false;
@@ -222,9 +237,7 @@ namespace Minecraft_updater
 
             if (AutoClose_AfterFinishd)
             {
-                SpinWait.SpinUntil(() => HaveNewVersion > -1, 5000);
-                if (HaveNewVersion != 1)
-                    CrossThread_Close();
+                CrossThread_Close();
             }
             else
                 MessageBox.Show("同步完成");
@@ -242,7 +255,7 @@ namespace Minecraft_updater
 
         private void Label_MouseUp(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
-            Process.Start("https://github.com/flier268/Minecraft_updater/releases");
+            Process.Start("https://gitlab.com/flier268/Minecraft_updater/tags");
         }
     }
 }

@@ -2,11 +2,15 @@
 using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Media;
 
 namespace Minecraft_updater
 {
@@ -24,7 +28,8 @@ namespace Minecraft_updater
         char[] Delimiter = new char[] { '+', '-', '_'};
         List<Pack> list = new List<Pack>();
 
-
+        App.UpdateMessage updateMessage = new App.UpdateMessage();
+        public int HaveNewVersion = -1;
 
         private void TextBlock_Drop(object sender, DragEventArgs e)
         {
@@ -90,7 +95,7 @@ namespace Minecraft_updater
                         {
                             name = fi.FullName.Substring(basepathLength, fi.FullName.Length - basepathLength);
                             MD5 = Private_Function.GetMD5(fi.FullName);
-                            URL = textBox.Text + Path.GetFileName(path) + fi.FullName.Substring(path.Length).Replace("\\", "/");
+                            URL = textBox.Text + name.Replace("\\", "/");
                             int temp = name.IndexOfAny(Delimiter);
                             switch (TextblockIndex)
                             {
@@ -153,13 +158,40 @@ namespace Minecraft_updater
 
         private void Window_Load(object sender, RoutedEventArgs e)
         {
+            CheckUpdate();
+            SpinWait.SpinUntil(() => HaveNewVersion > -1, 10000);
+            if (updateMessage.HaveUpdate)
+            {
+                Window_UpdateSelf window_UpdateSelf = new Window_UpdateSelf(updateMessage);
+                window_UpdateSelf.ShowDialog();
+            }
+
             if (ini.IniReadValue("Minecraft_updater", "updatepackMaker_BaseURL") != "")
                 textBox.Text = ini.IniReadValue("Minecraft_updater", "updatepackMaker_BaseURL");
             if (ini.IniReadValue("Minecraft_updater", "LogFile").ToLower() == "true")
                 Log.LogFile = true;
             this.textBox.TextChanged += new System.Windows.Controls.TextChangedEventHandler(this.textbox_TextChange);
         }
-
+        private void CheckUpdate()
+        {
+            Log.AddLine("檢查Minecraft updater是否有更新...", Colors.Black);
+            var task = Task.Run(() =>
+            {
+                string filename = Process.GetCurrentProcess().MainModule.FileName;
+                string tempfilename = Path.GetFileNameWithoutExtension(filename) + ".temp" + Path.GetExtension(filename);
+                if (File.Exists(tempfilename))
+                    File.Delete(tempfilename);
+                updateMessage = App.CheckUpdate();
+                if (updateMessage.HaveUpdate)
+                {
+                    HaveNewVersion = 1;
+                }
+                else
+                {
+                    HaveNewVersion = 0;
+                }
+            });
+        }
         private void Clear(object sender, RoutedEventArgs e)
         {
             Button b = (Button)sender;

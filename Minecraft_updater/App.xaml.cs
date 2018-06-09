@@ -5,7 +5,6 @@ using System.Linq;
 using System.Net.Http;
 using System.Reflection;
 using System.Text;
-using System.Text.RegularExpressions;
 using System.Windows;
 
 namespace Minecraft_updater
@@ -16,11 +15,13 @@ namespace Minecraft_updater
     public partial class App : Application
     {
         public static List<String> Args = new List<string>();
+        public static string Command="";
         protected override void OnStartup(StartupEventArgs e)
         {            
             Args = e.Args.ToList();
             if (Args.Count > 0)
             {
+                Command = Args[0];
                 if (Args[0].Equals(listCommand.updatepackMaker))
                 {
                     var window = new updatepackMaker();
@@ -58,13 +59,14 @@ namespace Minecraft_updater
         /// 檢查是否有更新
         /// </summary>
         /// <returns>true: 需要更新  false: 不需要更新</returns>
-        public static bool CheckUpdate()
+        public static UpdateMessage CheckUpdate()
         {
+            UpdateMessage updateMessage = new UpdateMessage();
             try
             {
                 using (var client = new HttpClient())
                 {
-                    var response = client.GetAsync("https://raw.githubusercontent.com/flier268/Minecraft_updater/master/Minecraft_updater/Properties/AssemblyInfo.cs").Result;
+                    var response = client.GetAsync("https://gitlab.com/flier268/Minecraft_updater/raw/master/Release/Version.txt").Result;
 
                     if (response.IsSuccessStatusCode)
                     {
@@ -73,26 +75,46 @@ namespace Minecraft_updater
 
                         // by calling .Result you are synchronously reading the result
                         string responseString = responseContent.ReadAsStringAsync().Result;
-                        Regex r = new Regex(@"^\[assembly: AssemblyVersion.*?([\d|\.]+).*?\]", RegexOptions.IgnoreCase | RegexOptions.Multiline);
-                        var m = r.Match(responseString);
+                        string[] package=responseString.Split('\n');
 
-                        Version ver = new Version(m.Groups[1].ToString());
+
+                        Version ver = new Version(package[0].ToString());
                         Version verson = Assembly.GetEntryAssembly().GetName().Version;
                         int tm = verson.CompareTo(ver);
 
                         if (tm >= 0)
                         {
-                            return false;
+                            updateMessage.HaveUpdate = false;
                         }
                         else
                         {
-                            return true;
+                            updateMessage.HaveUpdate = true;
+                            updateMessage.NewstVersion = package[0].ToString();
+                            updateMessage.SHA1 = package[1];
+                            StringBuilder stringBuilder = new StringBuilder();
+                            if(package.Length>2)
+                            for(int i=2;i<package.Length;i++)
+                                {
+                                    stringBuilder.AppendLine(package[i]);
+                                }
+                            updateMessage.Message = stringBuilder.ToString();
                         }
                     }
                 }
             }
             catch {}
-            return false;
+            return updateMessage;
+        }
+        public class UpdateMessage
+        {
+            public UpdateMessage()
+            {
+                HaveUpdate = false;
+            }
+            public bool HaveUpdate { get; set; }
+            public string NewstVersion { get; set; }
+            public string SHA1 { get; set; }
+            public string Message { get; set; }
         }
         void Update()
         {

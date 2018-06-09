@@ -49,6 +49,7 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'updatepackMaker|AnyCPU'">
     <DebugSymbols>true</DebugSymbols>
@@ -96,6 +97,9 @@
     <Compile Include="updater.xaml.cs">
       <DependentUpon>updater.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Window_UpdateSelf.xaml.cs">
+      <DependentUpon>Window_UpdateSelf.xaml</DependentUpon>
+    </Compile>
     <Page Include="updatepackMaker.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
@@ -112,6 +116,10 @@
       <SubType>Code</SubType>
     </Compile>
     <Page Include="updater.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Window_UpdateSelf.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

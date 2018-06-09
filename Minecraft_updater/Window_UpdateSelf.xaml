@@ -1,0 +1,32 @@
+﻿<Window x:Class="Minecraft_updater.Window_UpdateSelf"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" Topmost="True"
+        Title="發現新版本"  MinWidth="350" MinHeight="200" MaxWidth="450" SizeToContent="WidthAndHeight">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="auto"/>
+            <RowDefinition Height="auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="auto"/>
+        </Grid.RowDefinitions>
+        <DockPanel>
+            <Label Content="當前版本:"/>
+            <Label Content="{Binding CurrentVersion}" Margin="5,0,0,0"/>
+        </DockPanel>
+        <DockPanel Grid.Row="1">
+            <Label Content="最新版本:"/>
+            <Label Content="{Binding NewVersion}" Margin="5,0,0,0"/>
+        </DockPanel>
+        <StackPanel Grid.Row="2">
+            <Label Content="Message:"/>
+            <TextBlock Text="{Binding Message}" Margin="70,0,10,0" TextWrapping="Wrap"/>
+        </StackPanel>
+        <DockPanel Grid.Row="3" Margin="0,10" HorizontalAlignment="Center">
+            <Button Name="Button_Update" Content="更新" Padding="10,5" Margin="0,0,10,0" Click="Button_Update_Click"/>
+            <Button Content="略過" Padding="10,5" Margin="10,0,0,0" Click="Button_Cancel_Click"/>
+        </DockPanel>
+    </Grid>
+</Window>
