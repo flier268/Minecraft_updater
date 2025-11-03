@@ -45,7 +45,7 @@ namespace Minecraft_updater.Views
             {
                 var psi = new ProcessStartInfo
                 {
-                    FileName = "https://gitlab.com/flier268/Minecraft_updater/tags",
+                    FileName = "https://github.com/flier268/Minecraft_updater/releases",
                     UseShellExecute = true,
                 };
                 Process.Start(psi);

@@ -82,9 +82,13 @@ The Pack model and parsing logic is in [Models/Pack.cs](Minecraft_updater/Models
 ### Key Service Layer Components
 
 **UpdateService** ([Services/UpdateService.cs](Minecraft_updater/Services/UpdateService.cs)):
-- `CheckUpdateAsync()` - Checks for updater self-updates from GitLab
+- `CheckUpdateAsync()` - Checks for updater self-updates from GitHub Releases
 - Version comparison using `Version.CompareTo()`
-- Reads version info from: `https://gitlab.com/flier268/Minecraft_updater/raw/master/Release/Version.txt`
+- Reads version info from GitHub API: `https://api.github.com/repos/flier268/Minecraft_updater/releases/latest`
+- Parses release tag (e.g., "v1.2.3") and uses release body as update message
+- `GetAssetNameForCurrentPlatform()` - Determines the platform-specific asset name (win-x64, linux-x64, osx-x64)
+- Automatically finds the matching download URL from GitHub Release assets based on the current OS
+- Download URL is stored in `UpdateMessage.SHA1` field for backward compatibility
 
 **PrivateFunction** ([Services/PrivateFunction.cs](Minecraft_updater/Services/PrivateFunction.cs)):
 - `GetMD5(filepath)` - Computes MD5 hash for file verification
@@ -109,6 +113,13 @@ ViewModels inherit from `ViewModelBase` and use CommunityToolkit.Mvvm attributes
 - Generates Pack List files by scanning directories
 - Calculates MD5 hashes for all files
 - Supports drag-and-drop for folder selection
+
+**UpdateSelfWindowViewModel** ([ViewModels/UpdateSelfWindowViewModel.cs](Minecraft_updater/ViewModels/UpdateSelfWindowViewModel.cs)):
+- Handles self-update process for the application
+- Downloads platform-specific zip files from GitHub Releases
+- Extracts the update and replaces the current executable
+- Includes rollback mechanism if update fails
+- No SHA1 verification (relies on GitHub's secure distribution)
 
 ### Configuration
 

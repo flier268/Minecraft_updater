@@ -1,6 +1,8 @@
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.IO.Compression;
+using System.Linq;
 using System.Net.Http;
 using System.Reflection;
 using System.Security.Cryptography;
@@ -51,6 +53,12 @@ namespace Minecraft_updater.ViewModels
 
             try
             {
+                // 檢查是否有下載 URL
+                if (string.IsNullOrEmpty(_updateMessage.SHA1))
+                {
+                    throw new Exception("無法取得更新下載連結，請確認您的作業系統是否支援");
+                }
+
                 var filename = Environment.GetCommandLineArgs()[0];
                 if (string.IsNullOrEmpty(filename))
                 {
@@ -65,47 +73,73 @@ namespace Minecraft_updater.ViewModels
                 // 備份當前檔案
                 File.Move(filename, tempFilename, true);
 
-                // 下載新版本
-                using var httpClient = new HttpClient();
-                var downloadUrl =
-                    "https://gitlab.com/flier268/Minecraft_updater/raw/master/Release/Minecraft_updater.exe";
-                var response = await httpClient.GetAsync(downloadUrl);
-                response.EnsureSuccessStatusCode();
-
-                await using var fileStream = new FileStream(
-                    filename,
-                    FileMode.Create,
-                    FileAccess.Write,
-                    FileShare.None
-                );
-                await response.Content.CopyToAsync(fileStream);
-                await fileStream.FlushAsync();
-                fileStream.Close();
-
-                // 驗證 SHA1
-                var sha1 = GetSHA1(filename);
-                if (!sha1.Equals(_updateMessage.SHA1, StringComparison.InvariantCultureIgnoreCase))
+                try
                 {
-                    // SHA1 不符，恢復舊版本
-                    File.Delete(filename);
-                    File.Move(tempFilename, filename);
+                    // 從 GitHub Release 下載對應平台的 zip 檔案
+                    using var httpClient = new HttpClient();
+                    httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("Minecraft_updater/1.0");
 
-                    UpdateButtonText = "更新";
-                    IsUpdateEnabled = true;
+                    var zipUrl = _updateMessage.SHA1; // SHA1 欄位現在存放下載 URL
+                    var response = await httpClient.GetAsync(zipUrl);
+                    response.EnsureSuccessStatusCode();
 
-                    throw new Exception("下載的檔案 SHA-1 驗證失敗，已恢復舊版本");
+                    // 下載 zip 檔案到臨時位置
+                    var tempZipPath = Path.GetTempFileName();
+                    await using (var zipStream = await response.Content.ReadAsStreamAsync())
+                    await using (var zipFile = File.Create(tempZipPath))
+                    {
+                        await zipStream.CopyToAsync(zipFile);
+                    }
+
+                    // 解壓縮 zip 檔案
+                    var tempExtractPath = Path.Combine(
+                        Path.GetTempPath(),
+                        $"Minecraft_updater_update_{Guid.NewGuid()}"
+                    );
+                    System.IO.Compression.ZipFile.ExtractToDirectory(tempZipPath, tempExtractPath);
+
+                    // 找到解壓縮後的執行檔
+                    var extractedFiles = Directory.GetFiles(
+                        tempExtractPath,
+                        Path.GetFileName(filename),
+                        SearchOption.AllDirectories
+                    );
+
+                    if (extractedFiles.Length == 0)
+                    {
+                        throw new Exception(
+                            $"在更新檔案中找不到執行檔: {Path.GetFileName(filename)}"
+                        );
+                    }
+
+                    // 複製新版本到原位置
+                    File.Copy(extractedFiles[0], filename, true);
+
+                    // 清理臨時檔案
+                    File.Delete(tempZipPath);
+                    Directory.Delete(tempExtractPath, true);
+
+                    // 啟動新版本並結束當前程式
+                    var startInfo = new ProcessStartInfo(filename)
+                    {
+                        Arguments = App.Command,
+                        UseShellExecute = true,
+                    };
+                    Process.Start(startInfo);
+
+                    UpdateCompleted?.Invoke(this, EventArgs.Empty);
+                    Environment.Exit(0);
                 }
-
-                // 啟動新版本並結束當前程式
-                var startInfo = new ProcessStartInfo(filename)
+                catch
                 {
-                    Arguments = App.Command,
-                    UseShellExecute = true,
-                };
-                Process.Start(startInfo);
-
-                UpdateCompleted?.Invoke(this, EventArgs.Empty);
-                Environment.Exit(0);
+                    // 如果更新失敗，恢復舊版本
+                    if (File.Exists(filename))
+                    {
+                        File.Delete(filename);
+                    }
+                    File.Move(tempFilename, filename);
+                    throw;
+                }
             }
             catch (Exception ex)
             {
