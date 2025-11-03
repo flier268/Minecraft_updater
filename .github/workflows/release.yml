@@ -1,0 +1,76 @@
+name: Build and Release AOT
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            runtime: linux-x64
+            artifact-name: Minecraft_updater-linux-x64
+          - os: windows-latest
+            runtime: win-x64
+            artifact-name: Minecraft_updater-win-x64
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Generate tag name
+      id: tag
+      run: |
+        if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+          echo "name=build-$(date +'%Y%m%d-%H%M%S')" >> $GITHUB_OUTPUT
+          echo "is_manual=true" >> $GITHUB_OUTPUT
+        else
+          echo "name=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+          echo "is_manual=false" >> $GITHUB_OUTPUT
+        fi
+      shell: bash
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '9.0.x'
+
+    - name: Build and Test
+      run: |
+        dotnet restore Minecraft_updater.sln
+        dotnet build Minecraft_updater.sln -c Release --no-restore
+        dotnet test Minecraft_updater.Tests/Minecraft_updater.Tests.csproj -c Release --no-build --verbosity normal
+
+    - name: Publish AOT
+      run: dotnet publish Minecraft_updater/Minecraft_updater.csproj -c Release -r ${{ matrix.runtime }} --self-contained -p:PublishAot=true -o publish/${{ matrix.artifact-name }}
+
+    - name: Create zip archive
+      run: |
+        cd publish
+        if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
+          zip -r ../${{ matrix.artifact-name }}.zip ${{ matrix.artifact-name }}
+        else
+          powershell Compress-Archive -Path ${{ matrix.artifact-name }} -DestinationPath ../${{ matrix.artifact-name }}.zip
+        fi
+      shell: bash
+
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: ${{ steps.tag.outputs.name }}
+        name: ${{ steps.tag.outputs.is_manual == 'true' && format('Build {0}', steps.tag.outputs.name) || steps.tag.outputs.name }}
+        files: ${{ matrix.artifact-name }}.zip
+        draft: false
+        prerelease: ${{ steps.tag.outputs.is_manual == 'true' }}
+        generate_release_notes: ${{ steps.tag.outputs.is_manual == 'false' }}
+        body: ${{ steps.tag.outputs.is_manual == 'true' && 'Automated build from manual trigger' || '' }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
