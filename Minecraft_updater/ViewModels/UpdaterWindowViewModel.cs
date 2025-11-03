@@ -73,7 +73,7 @@ namespace Minecraft_updater.ViewModels
             try
             {
                 // 刪除舊的臨時檔案
-                var filename = Process.GetCurrentProcess().MainModule?.FileName ?? "";
+                var filename = Environment.GetCommandLineArgs()[0] ?? "";
                 var tempFilename =
                     Path.GetFileNameWithoutExtension(filename)
                     + ".temp"
