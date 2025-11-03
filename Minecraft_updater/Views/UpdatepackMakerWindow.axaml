@@ -4,12 +4,12 @@
         xmlns:views="using:Minecraft_updater.Views"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        mc:Ignorable="d" d:DesignWidth="650" d:DesignHeight="700"
+        mc:Ignorable="d" d:DesignWidth="900" d:DesignHeight="700"
         x:Class="Minecraft_updater.Views.UpdatepackMakerWindow"
         x:DataType="vm:UpdatepackMakerWindowViewModel"
         Title="Minecraft Updater - Pack Maker"
         Icon="/Assets/minecraft_updater.ico"
-        Width="650" Height="700"
+        Width="900" Height="700"
         MinWidth="600" MinHeight="600"
         WindowStartupLocation="CenterScreen"
         DragDrop.AllowDrop="True">
@@ -36,13 +36,35 @@
             </MenuItem>
         </Menu>
 
-        <!-- Base URL 輸入 -->
-        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,10">
-            <TextBox Text="{Binding BaseUrl}"
-                     Width="380"
-                     Watermark="http://aaa.bb.com/"/>
+        <!-- Base Path 和 Base URL 輸入 -->
+        <Grid Grid.Row="1" Margin="0,0,0,10">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
 
-            <Border BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+            <StackPanel Grid.Column="0" Spacing="10">
+                <!-- Base Path -->
+                <StackPanel Orientation="Horizontal" Spacing="10">
+                    <TextBlock Text="Base Path:" VerticalAlignment="Center" Width="80"/>
+                    <TextBox Text="{Binding BasePath}"
+                             Width="380"
+                             IsReadOnly="True"
+                             Watermark="請選取基礎目錄..."/>
+                    <Button Content="選取目錄" Click="OnSelectBasePathClick"/>
+                </StackPanel>
+
+                <!-- Base URL -->
+                <StackPanel Orientation="Horizontal" Spacing="10">
+                    <TextBlock Text="Base URL:" VerticalAlignment="Center" Width="80"/>
+                    <TextBox Text="{Binding BaseUrl}"
+                             Width="380"
+                             Watermark="http://example.com/"/>
+                </StackPanel>
+            </StackPanel>
+
+            <Border Grid.Column="1"
+                    BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}"
                     BorderThickness="1"
                     Padding="10"
                     Margin="10,0,0,0">
@@ -55,7 +77,7 @@
                               Margin="0,5,0,0"/>
                 </StackPanel>
             </Border>
-        </StackPanel>
+        </Grid>
 
         <TextBlock Grid.Row="2" Text="提示：將檔案或資料夾拖曳到下方的文字框中"
                    Foreground="Gray" Margin="0,0,0,5"/>

@@ -27,6 +27,9 @@ namespace Minecraft_updater.ViewModels
         private string _baseUrl = "http://aaa.bb.com/";
 
         [ObservableProperty]
+        private string _basePath = string.Empty;
+
+        [ObservableProperty]
         private bool _addModToDelete = true;
 
         [ObservableProperty]
@@ -54,12 +57,23 @@ namespace Minecraft_updater.ViewModels
                 BaseUrl = savedUrl;
             }
 
+            var savedBasePath = _ini.IniReadValue("Minecraft_updater", "updatepackMaker_BasePath");
+            if (!string.IsNullOrEmpty(savedBasePath))
+            {
+                BasePath = savedBasePath;
+            }
+
             Log.LogFile = _ini.IniReadValue("Minecraft_updater", "LogFile").ToLower() == "true";
         }
 
         partial void OnBaseUrlChanged(string value)
         {
             _ini.IniWriteValue("Minecraft_updater", "updatepackMaker_BaseURL", value);
+        }
+
+        partial void OnBasePathChanged(string value)
+        {
+            _ini.IniWriteValue("Minecraft_updater", "updatepackMaker_BasePath", value);
         }
 
         public async Task InitializeAsync()
@@ -111,16 +125,40 @@ namespace Minecraft_updater.ViewModels
 
         public void ProcessDroppedFiles(IEnumerable<string> paths, int targetListIndex)
         {
-            var basepathLength = AppDomain.CurrentDomain.BaseDirectory.Length;
+            // 使用 BasePath，如果未設定則使用應用程式目錄
+            var baseDirectory = string.IsNullOrEmpty(BasePath)
+                ? AppDomain.CurrentDomain.BaseDirectory
+                : BasePath;
+
+            // 確保 baseDirectory 以目錄分隔符號結尾
+            if (
+                !baseDirectory.EndsWith(Path.DirectorySeparatorChar.ToString())
+                && !baseDirectory.EndsWith(Path.AltDirectorySeparatorChar.ToString())
+            )
+            {
+                baseDirectory += Path.DirectorySeparatorChar;
+            }
+
+            var basepathLength = baseDirectory.Length;
             var sb1 = new StringBuilder();
             var sb2 = new StringBuilder();
             var sb3 = new StringBuilder();
 
             foreach (var path in paths)
             {
-                if (!path.StartsWith(AppDomain.CurrentDomain.BaseDirectory))
+                // 標準化路徑以進行比較
+                var normalizedPath = Path.GetFullPath(path);
+                var normalizedBasePath = Path.GetFullPath(baseDirectory);
+
+                if (
+                    !normalizedPath.StartsWith(
+                        normalizedBasePath,
+                        StringComparison.OrdinalIgnoreCase
+                    )
+                )
                 {
-                    // 檔案不在應用程式目錄下
+                    // 檔案不在基礎目錄下
+                    Log.AddLine($"檔案 {path} 不在基礎目錄 {baseDirectory} 下，已跳過");
                     continue;
                 }
 
@@ -225,6 +263,7 @@ namespace Minecraft_updater.ViewModels
                 var sb1 = new StringBuilder();
                 var sb2 = new StringBuilder();
                 var sb3 = new StringBuilder();
+                string? detectedBaseUrl = null;
 
                 using var reader = new StreamReader(filePath);
                 while (!reader.EndOfStream)
@@ -240,6 +279,19 @@ namespace Minecraft_updater.ViewModels
                     else if (line.StartsWith(":"))
                     {
                         sb3.AppendLine(line);
+                        // 嘗試從不存在則添加清單中偵測 BaseUrl
+                        if (detectedBaseUrl == null)
+                        {
+                            var match = regex.Match(line);
+                            if (match.Success && match.Groups.Count > 3)
+                            {
+                                var url = match.Groups[3].Value;
+                                detectedBaseUrl = TryExtractBaseUrl(
+                                    url,
+                                    match.Groups[1].Value.TrimStart(':')
+                                );
+                            }
+                        }
                     }
                     else
                     {
@@ -247,6 +299,12 @@ namespace Minecraft_updater.ViewModels
                         if (match.Success)
                         {
                             sb1.AppendLine(line);
+                            // 嘗試從同步清單中偵測 BaseUrl
+                            if (detectedBaseUrl == null && match.Groups.Count > 3)
+                            {
+                                var url = match.Groups[3].Value;
+                                detectedBaseUrl = TryExtractBaseUrl(url, match.Groups[1].Value);
+                            }
                         }
                     }
                 }
@@ -254,11 +312,51 @@ namespace Minecraft_updater.ViewModels
                 SyncListText = sb1.ToString();
                 DeleteListText = sb2.ToString();
                 DownloadWhenNotExistText = sb3.ToString();
+
+                // 如果偵測到 BaseUrl，自動填入
+                if (!string.IsNullOrEmpty(detectedBaseUrl))
+                {
+                    BaseUrl = detectedBaseUrl;
+                    Log.AddLine($"從 SC 檔案中偵測到 Base URL: {detectedBaseUrl}");
+                }
+
+                // 嘗試從 SC 檔案所在目錄偵測 BasePath
+                var scFileDirectory = Path.GetDirectoryName(filePath);
+                if (!string.IsNullOrEmpty(scFileDirectory) && Directory.Exists(scFileDirectory))
+                {
+                    BasePath = scFileDirectory;
+                    Log.AddLine($"將 Base Path 設定為 SC 檔案所在目錄: {scFileDirectory}");
+                }
             }
             catch (Exception ex)
             {
                 Log.AddLine($"載入檔案失敗: {ex.Message}");
             }
+        }
+
+        private string? TryExtractBaseUrl(string fullUrl, string relativePath)
+        {
+            if (string.IsNullOrEmpty(fullUrl) || string.IsNullOrEmpty(relativePath))
+                return null;
+
+            try
+            {
+                // 移除相對路徑中的反斜線，統一使用正斜線
+                var normalizedPath = relativePath.Replace("\\", "/");
+
+                // 如果 URL 以相對路徑結尾，擷取 BaseUrl
+                if (fullUrl.EndsWith(normalizedPath, StringComparison.OrdinalIgnoreCase))
+                {
+                    var baseUrl = fullUrl.Substring(0, fullUrl.Length - normalizedPath.Length);
+                    return baseUrl;
+                }
+            }
+            catch
+            {
+                // 忽略解析錯誤
+            }
+
+            return null;
         }
 
         public string GetSaveContent()

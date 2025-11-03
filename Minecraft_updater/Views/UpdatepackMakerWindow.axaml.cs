@@ -108,8 +108,14 @@ namespace Minecraft_updater.Views
             {
                 var paths = files.Select(f => f.Path.LocalPath).ToList();
 
-                // 檢查檔案是否在應用程式目錄下
-                var basePath = NormalizePath(AppDomain.CurrentDomain.BaseDirectory);
+                // 檢查檔案是否在基礎目錄下
+                if (string.IsNullOrEmpty(_viewModel.BasePath))
+                {
+                    await ShowMessageAsync("錯誤", "請先選取基礎目錄 (Base Path)");
+                    return;
+                }
+
+                var basePath = NormalizePath(_viewModel.BasePath);
                 if (
                     !paths.All(p =>
                         NormalizePath(p).StartsWith(basePath, StringComparison.OrdinalIgnoreCase)
@@ -118,7 +124,7 @@ namespace Minecraft_updater.Views
                 {
                     await ShowMessageAsync(
                         "錯誤",
-                        "請將Minecraft_updater置於該目錄/檔案於同一目錄下\r\n詳情請查閱wiki"
+                        $"檔案必須在基礎目錄下\r\n基礎目錄: {_viewModel.BasePath}"
                     );
                     return;
                 }
@@ -177,6 +183,25 @@ namespace Minecraft_updater.Views
 
             // 預設為同步清單
             return 0;
+        }
+
+        private async void OnSelectBasePathClick(object? sender, RoutedEventArgs e)
+        {
+            if (_viewModel == null)
+                return;
+
+            var folders = await StorageProvider.OpenFolderPickerAsync(
+                new FolderPickerOpenOptions
+                {
+                    Title = "選取基礎目錄 (Base Path)",
+                    AllowMultiple = false,
+                }
+            );
+
+            if (folders.Count > 0)
+            {
+                _viewModel.BasePath = folders[0].Path.LocalPath;
+            }
         }
 
         private async void OnLoadClick(object? sender, RoutedEventArgs e)
@@ -265,8 +290,14 @@ namespace Minecraft_updater.Views
             if (_viewModel == null)
                 return;
 
-            // 檢查檔案是否在應用程式目錄下
-            var basePath = NormalizePath(AppDomain.CurrentDomain.BaseDirectory);
+            // 檢查檔案是否在基礎目錄下
+            if (string.IsNullOrEmpty(_viewModel.BasePath))
+            {
+                await ShowMessageAsync("錯誤", "請先選取基礎目錄 (Base Path)");
+                return;
+            }
+
+            var basePath = NormalizePath(_viewModel.BasePath);
             if (
                 !paths.All(p =>
                     NormalizePath(p).StartsWith(basePath, StringComparison.OrdinalIgnoreCase)
@@ -275,7 +306,7 @@ namespace Minecraft_updater.Views
             {
                 await ShowMessageAsync(
                     "錯誤",
-                    "請將Minecraft_updater置於該目錄/檔案於同一目錄下\r\n詳情請查閱wiki"
+                    $"檔案必須在基礎目錄下\r\n基礎目錄: {_viewModel.BasePath}"
                 );
                 return;
             }
