@@ -1,0 +1,324 @@
+using System;
+using System.IO;
+using System.Threading.Tasks;
+using Xunit;
+using FluentAssertions;
+using Minecraft_updater.Services;
+
+namespace Minecraft_updater.Tests.Services
+{
+    public class PrivateFunctionTests : IDisposable
+    {
+        private readonly string _testDirectory;
+
+        public PrivateFunctionTests()
+        {
+            _testDirectory = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
+            Directory.CreateDirectory(_testDirectory);
+        }
+
+        public void Dispose()
+        {
+            if (Directory.Exists(_testDirectory))
+            {
+                try
+                {
+                    Directory.Delete(_testDirectory, true);
+                }
+                catch
+                {
+                    // Ignore cleanup errors
+                }
+            }
+        }
+
+        #region MD5 Tests
+
+        [Fact]
+        public void GetMD5_ValidFile_ShouldReturnCorrectMD5()
+        {
+            // Arrange
+            var testFile = Path.Combine(_testDirectory, "test.txt");
+            File.WriteAllText(testFile, "Hello World");
+
+            // Act
+            var md5 = PrivateFunction.GetMD5(testFile);
+
+            // Assert
+            md5.Should().NotBeNullOrEmpty();
+            md5.Should().HaveLength(32); // MD5 hash is 32 characters in hex
+            md5.Should().MatchRegex("^[A-F0-9]+$"); // Should be uppercase hex
+        }
+
+        [Fact]
+        public void GetMD5_EmptyFile_ShouldReturnMD5()
+        {
+            // Arrange
+            var testFile = Path.Combine(_testDirectory, "empty.txt");
+            File.WriteAllText(testFile, "");
+
+            // Act
+            var md5 = PrivateFunction.GetMD5(testFile);
+
+            // Assert
+            md5.Should().NotBeNullOrEmpty();
+            md5.Should().Be("D41D8CD98F00B204E9800998ECF8427E"); // MD5 of empty string
+        }
+
+        [Fact]
+        public void GetMD5_SameContent_ShouldReturnSameMD5()
+        {
+            // Arrange
+            var file1 = Path.Combine(_testDirectory, "file1.txt");
+            var file2 = Path.Combine(_testDirectory, "file2.txt");
+            var content = "Test content for MD5";
+            File.WriteAllText(file1, content);
+            File.WriteAllText(file2, content);
+
+            // Act
+            var md5_1 = PrivateFunction.GetMD5(file1);
+            var md5_2 = PrivateFunction.GetMD5(file2);
+
+            // Assert
+            md5_1.Should().Be(md5_2);
+        }
+
+        [Fact]
+        public void GetMD5_DifferentContent_ShouldReturnDifferentMD5()
+        {
+            // Arrange
+            var file1 = Path.Combine(_testDirectory, "file1.txt");
+            var file2 = Path.Combine(_testDirectory, "file2.txt");
+            File.WriteAllText(file1, "Content A");
+            File.WriteAllText(file2, "Content B");
+
+            // Act
+            var md5_1 = PrivateFunction.GetMD5(file1);
+            var md5_2 = PrivateFunction.GetMD5(file2);
+
+            // Assert
+            md5_1.Should().NotBe(md5_2);
+        }
+
+        [Fact]
+        public void GetMD5_NonExistentFile_ShouldThrow()
+        {
+            // Arrange
+            var nonExistentFile = Path.Combine(_testDirectory, "nonexistent.txt");
+
+            // Act
+            Action act = () => PrivateFunction.GetMD5(nonExistentFile);
+
+            // Assert
+            act.Should().Throw<FileNotFoundException>();
+        }
+
+        [Fact]
+        public void GetMD5_BinaryFile_ShouldReturnMD5()
+        {
+            // Arrange
+            var binaryFile = Path.Combine(_testDirectory, "binary.dat");
+            var binaryData = new byte[] { 0x00, 0xFF, 0xAA, 0x55, 0x12, 0x34 };
+            File.WriteAllBytes(binaryFile, binaryData);
+
+            // Act
+            var md5 = PrivateFunction.GetMD5(binaryFile);
+
+            // Assert
+            md5.Should().NotBeNullOrEmpty();
+            md5.Should().HaveLength(32);
+        }
+
+        #endregion
+
+        #region Temporary File Tests
+
+        [Fact]
+        public void CreateTmpFile_ShouldCreateFile()
+        {
+            // Act
+            var tmpFile = PrivateFunction.CreateTmpFile();
+
+            // Assert
+            tmpFile.Should().NotBeNullOrEmpty();
+            File.Exists(tmpFile).Should().BeTrue();
+
+            // Cleanup
+            File.Delete(tmpFile);
+        }
+
+        [Fact]
+        public void CreateTmpFile_FileShouldExist()
+        {
+            // Act
+            var tmpFile = PrivateFunction.CreateTmpFile();
+
+            // Assert
+            var fileInfo = new FileInfo(tmpFile);
+            fileInfo.Exists.Should().BeTrue();
+            // Note: Temporary attribute behavior differs across OS platforms
+
+            // Cleanup
+            File.Delete(tmpFile);
+        }
+
+        [Fact]
+        public void CreateTmpFile_MultipleCalls_ShouldCreateDifferentFiles()
+        {
+            // Act
+            var tmpFile1 = PrivateFunction.CreateTmpFile();
+            var tmpFile2 = PrivateFunction.CreateTmpFile();
+
+            // Assert
+            tmpFile1.Should().NotBe(tmpFile2);
+            File.Exists(tmpFile1).Should().BeTrue();
+            File.Exists(tmpFile2).Should().BeTrue();
+
+            // Cleanup
+            File.Delete(tmpFile1);
+            File.Delete(tmpFile2);
+        }
+
+        [Fact]
+        public void DeleteTmpFile_ExistingFile_ShouldDeleteFile()
+        {
+            // Arrange
+            var tmpFile = PrivateFunction.CreateTmpFile();
+            File.Exists(tmpFile).Should().BeTrue();
+
+            // Act
+            PrivateFunction.DeleteTmpFile(tmpFile);
+
+            // Assert
+            File.Exists(tmpFile).Should().BeFalse();
+        }
+
+        [Fact]
+        public void DeleteTmpFile_NonExistentFile_ShouldNotThrow()
+        {
+            // Arrange
+            var nonExistentFile = Path.Combine(_testDirectory, "nonexistent.tmp");
+
+            // Act
+            Action act = () => PrivateFunction.DeleteTmpFile(nonExistentFile);
+
+            // Assert
+            act.Should().NotThrow();
+        }
+
+        #endregion
+
+        #region Download File Tests (需要測試環境支援網路，這裡提供基本測試)
+
+        [Fact]
+        public async Task DownloadFileAsync_InvalidURL_ShouldReturnFalse()
+        {
+            // Arrange
+            var invalidUrl = "invalid-url";
+            var targetPath = Path.Combine(_testDirectory, "download.txt");
+            var logMessages = new System.Collections.Generic.List<string>();
+
+            // Act
+            var result = await PrivateFunction.DownloadFileAsync(
+                invalidUrl,
+                targetPath,
+                msg => logMessages.Add(msg)
+            );
+
+            // Assert
+            result.Should().BeFalse();
+            logMessages.Should().Contain(msg => msg.Contains("錯誤"));
+        }
+
+        [Fact]
+        public void DownloadFile_SyncVersion_InvalidURL_ShouldReturnFalse()
+        {
+            // Arrange
+            var invalidUrl = "invalid-url";
+            var targetPath = Path.Combine(_testDirectory, "download.txt");
+
+            // Act
+            var result = PrivateFunction.DownloadFile(invalidUrl, targetPath);
+
+            // Assert
+            result.Should().BeFalse();
+        }
+
+        [Fact]
+        public async Task DownloadFileAsync_ShouldCreateDirectory()
+        {
+            // Arrange
+            var subDir = Path.Combine(_testDirectory, "subfolder", "nested");
+            var targetPath = Path.Combine(subDir, "file.txt");
+            var invalidUrl = "http://invalid.url.example.com/file.txt";
+
+            // Act
+            await PrivateFunction.DownloadFileAsync(invalidUrl, targetPath);
+
+            // Assert - Directory should be created even if download fails
+            Directory.Exists(subDir).Should().BeTrue();
+        }
+
+        [Fact]
+        public async Task DownloadFileAsync_ExistingFile_ShouldDeleteOldFile()
+        {
+            // Arrange
+            var targetPath = Path.Combine(_testDirectory, "existing.txt");
+            File.WriteAllText(targetPath, "Old content");
+            var originalCreationTime = File.GetCreationTime(targetPath);
+
+            // Wait a bit to ensure time difference
+            await Task.Delay(10);
+
+            // Act - Try to download (will fail but should delete old file first)
+            await PrivateFunction.DownloadFileAsync("http://invalid.url/file.txt", targetPath);
+
+            // Assert - Old file should have been deleted (new attempt was made)
+            // Note: File might not exist if download failed, which is expected
+            if (File.Exists(targetPath))
+            {
+                File.GetCreationTime(targetPath).Should().NotBe(originalCreationTime);
+            }
+        }
+
+        [Fact]
+        public async Task DownloadFileAsync_WithLogAction_ShouldInvokeCallback()
+        {
+            // Arrange
+            var targetPath = Path.Combine(_testDirectory, "test.txt");
+            var logMessages = new System.Collections.Generic.List<string>();
+            var invalidUrl = "http://invalid.example.com/file.txt";
+
+            // Act
+            await PrivateFunction.DownloadFileAsync(
+                invalidUrl,
+                targetPath,
+                msg => logMessages.Add(msg)
+            );
+
+            // Assert
+            logMessages.Should().NotBeEmpty();
+            logMessages.Should().Contain(msg => msg.Contains("正在下載") || msg.Contains("錯誤"));
+        }
+
+        [Fact]
+        public async Task DownloadFileAsync_NullLogAction_ShouldNotThrow()
+        {
+            // Arrange
+            var targetPath = Path.Combine(_testDirectory, "test.txt");
+            var invalidUrl = "http://invalid.example.com/file.txt";
+
+            // Act
+            Func<Task> act = async () => await PrivateFunction.DownloadFileAsync(
+                invalidUrl,
+                targetPath,
+                null
+            );
+
+            // Assert
+            await act.Should().NotThrowAsync();
+        }
+
+        #endregion
+    }
+}
