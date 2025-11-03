@@ -18,7 +18,7 @@ namespace Minecraft_updater.Views
         public static readonly StyledProperty<string> ListTextProperty = AvaloniaProperty.Register<
             FileListControl,
             string
-        >(nameof(ListText), string.Empty);
+        >(nameof(ListText), string.Empty, defaultBindingMode: Avalonia.Data.BindingMode.TwoWay);
 
         public static readonly StyledProperty<ICommand?> ClearCommandProperty =
             AvaloniaProperty.Register<FileListControl, ICommand?>(nameof(ClearCommand));
