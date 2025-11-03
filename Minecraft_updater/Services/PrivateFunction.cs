@@ -108,9 +108,19 @@ namespace Minecraft_updater.Services
 
                 // 先解碼再重新編碼 URL
                 var decodedUrl = Uri.UnescapeDataString(url);
+                logAction?.Invoke($"🔗 URL 解碼結果: {decodedUrl}");
                 var uri = new Uri(decodedUrl);
-                var response = await httpClient.GetAsync(uri);
+                logAction?.Invoke("⬇️ 正在連線並取得檔案流...");
+                // response.EnsureSuccessStatusCode();
+                using var response = await httpClient.GetAsync(uri);
                 response.EnsureSuccessStatusCode();
+                using var cloudefileStream = await response.Content.ReadAsStreamAsync();
+                logAction?.Invoke(
+                    $"✅ 成功取得檔案流。檔案大小 (可能為估計): {cloudefileStream.Length} bytes"
+                );
+
+                // 4. 將流寫入檔案
+                logAction?.Invoke($"💾 正在寫入檔案到: {path}");
 
                 await using var fileStream = new FileStream(
                     path,
@@ -118,7 +128,10 @@ namespace Minecraft_updater.Services
                     FileAccess.Write,
                     FileShare.None
                 );
-                await response.Content.CopyToAsync(fileStream);
+                await cloudefileStream.CopyToAsync(fileStream);
+                fileStream.Flush();
+                fileStream.Close();
+                logAction?.Invoke("🎉 檔案下載並寫入完成！");
 
                 return true;
             }
