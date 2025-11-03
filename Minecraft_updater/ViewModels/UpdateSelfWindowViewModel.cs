@@ -98,22 +98,25 @@ namespace Minecraft_updater.ViewModels
                     );
                     System.IO.Compression.ZipFile.ExtractToDirectory(tempZipPath, tempExtractPath);
 
-                    // 找到解壓縮後的執行檔
-                    var extractedFiles = Directory.GetFiles(
-                        tempExtractPath,
-                        Path.GetFileName(filename),
-                        SearchOption.AllDirectories
-                    );
-
-                    if (extractedFiles.Length == 0)
+                    // 獲取執行檔所在的目錄
+                    var executableDir = Path.GetDirectoryName(filename);
+                    if (string.IsNullOrEmpty(executableDir))
                     {
-                        throw new Exception(
-                            $"在更新檔案中找不到執行檔: {Path.GetFileName(filename)}"
-                        );
+                        throw new Exception("無法取得執行檔所在目錄");
                     }
 
-                    // 複製新版本到原位置
-                    File.Copy(extractedFiles[0], filename, true);
+                    // 尋找解壓縮後包含執行檔的目錄
+                    var executableName = Path.GetFileName(filename);
+                    Debug.WriteLine($"尋找執行檔: {executableName}");
+                    var sourceDir = FindExecutableDirectory(tempExtractPath, executableName);
+
+                    if (sourceDir == null)
+                    {
+                        throw new Exception($"在更新檔案中找不到執行檔: {executableName}");
+                    }
+
+                    // 複製解壓縮後的所有檔案到執行檔目錄
+                    CopyDirectory(sourceDir, executableDir, true);
 
                     // 清理臨時檔案
                     File.Delete(tempZipPath);
@@ -153,6 +156,62 @@ namespace Minecraft_updater.ViewModels
         private void Cancel()
         {
             UpdateCancelled?.Invoke(this, EventArgs.Empty);
+        }
+
+        private static string? FindExecutableDirectory(string rootPath, string executableName)
+        {
+            // 先檢查根目錄是否包含執行檔
+            var rootExePath = Path.Combine(rootPath, executableName);
+            if (File.Exists(rootExePath))
+            {
+                return rootPath;
+            }
+
+            // 遞迴搜尋子目錄
+            try
+            {
+                foreach (var subDir in Directory.GetDirectories(rootPath))
+                {
+                    var result = FindExecutableDirectory(subDir, executableName);
+                    if (result != null)
+                    {
+                        return result;
+                    }
+                }
+            }
+            catch (UnauthorizedAccessException)
+            {
+                // 忽略無權限存取的目錄
+            }
+
+            return null;
+        }
+
+        private static void CopyDirectory(string sourceDir, string destDir, bool overwrite)
+        {
+            var dir = new DirectoryInfo(sourceDir);
+
+            if (!dir.Exists)
+            {
+                throw new DirectoryNotFoundException($"來源目錄不存在: {sourceDir}");
+            }
+
+            // 建立目標目錄（如果不存在）
+            Directory.CreateDirectory(destDir);
+
+            // 複製所有檔案
+            foreach (var file in dir.GetFiles())
+            {
+                var targetFilePath = Path.Combine(destDir, file.Name);
+                file.CopyTo(targetFilePath, overwrite);
+            }
+
+            // 遞迴複製子目錄
+            foreach (var subDir in dir.GetDirectories())
+            {
+                var newDestinationDir = Path.Combine(destDir, subDir.Name);
+                CopyDirectory(subDir.FullName, newDestinationDir, overwrite);
+            }
         }
 
         private static string GetSHA1(string path)
