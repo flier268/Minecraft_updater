@@ -40,6 +40,46 @@
                 "${workspaceFolder}/Minecraft_updater/Minecraft_updater.csproj"
             ],
             "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "publish-linux",
+            "command": "dotnet",
+            "type": "process",
+            "args": [
+                "publish",
+                "${workspaceFolder}/Minecraft_updater/Minecraft_updater.csproj",
+                "-c",
+                "Release",
+                "-r",
+                "linux-x64",
+                "/property:GenerateFullPaths=true",
+                "/consoleloggerparameters:NoSummary;ForceNoAlign"
+            ],
+            "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "publish-windows",
+            "command": "dotnet",
+            "type": "process",
+            "args": [
+                "publish",
+                "${workspaceFolder}/Minecraft_updater/Minecraft_updater.csproj",
+                "-c",
+                "Release",
+                "-r",
+                "win-x64",
+                "/property:GenerateFullPaths=true",
+                "/consoleloggerparameters:NoSummary;ForceNoAlign"
+            ],
+            "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "publish-all",
+            "dependsOn": [
+                "publish-linux",
+                "publish-windows"
+            ],
+            "problemMatcher": []
         }
     ]
 }
