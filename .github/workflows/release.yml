@@ -1,0 +1,93 @@
+name: Build and Release AOT
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  release:
+    if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            runtime: linux-x64
+            artifact-name: Minecraft_updater-linux-x64
+          - os: windows-latest
+            runtime: win-x64
+            artifact-name: Minecraft_updater-win-x64
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Generate date tag
+      if: github.event_name == 'workflow_dispatch'
+      id: date
+      run: echo "tag=build-$(date +'%Y%m%d-%H%M%S')" >> $GITHUB_OUTPUT
+
+    - name: Create and push tag (manual trigger)
+      if: github.event_name == 'workflow_dispatch'
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+        git tag ${{ steps.date.outputs.tag }}
+        git push origin ${{ steps.date.outputs.tag }}
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '9.0.x'
+
+    - name: Restore dependencies
+      run: dotnet restore Minecraft_updater.sln
+
+    - name: Build
+      run: dotnet build Minecraft_updater.sln -c Release --no-restore
+
+    - name: Test
+      run: dotnet test Minecraft_updater.Tests/Minecraft_updater.Tests.csproj -c Release --no-build --verbosity normal
+
+    - name: Publish AOT
+      run: dotnet publish Minecraft_updater/Minecraft_updater.csproj -c Release -r ${{ matrix.runtime }} --self-contained -p:PublishAot=true -o publish/${{ matrix.artifact-name }}
+
+    - name: Create zip archive (Linux)
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        cd publish
+        zip -r ../${{ matrix.artifact-name }}.zip ${{ matrix.artifact-name }}
+
+    - name: Create zip archive (Windows)
+      if: matrix.os == 'windows-latest'
+      run: |
+        cd publish
+        Compress-Archive -Path ${{ matrix.artifact-name }} -DestinationPath ../${{ matrix.artifact-name }}.zip
+      shell: pwsh
+
+    - name: Upload to Release (tag)
+      if: startsWith(github.ref, 'refs/tags/')
+      uses: softprops/action-gh-release@v1
+      with:
+        files: ${{ matrix.artifact-name }}.zip
+        draft: false
+        prerelease: false
+        generate_release_notes: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Upload to Release (manual)
+      if: github.event_name == 'workflow_dispatch'
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: ${{ steps.date.outputs.tag }}
+        name: Build ${{ steps.date.outputs.tag }}
+        files: ${{ matrix.artifact-name }}.zip
+        draft: false
+        prerelease: true
+        body: Automated build from manual trigger
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
