@@ -1,0 +1,64 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Minecraft_updater.ViewModels"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="400" d:DesignHeight="300"
+        x:Class="Minecraft_updater.Views.UpdateSelfWindow"
+        x:DataType="vm:UpdateSelfWindowViewModel"
+        Title="發現新版本"
+        Icon="/Assets/minecraft_updater.ico"
+        Width="400" Height="300"
+        MinWidth="350" MinHeight="200"
+        Topmost="True"
+        CanResize="False"
+        WindowStartupLocation="CenterScreen">
+
+    <Design.DataContext>
+        <vm:UpdateSelfWindowViewModel />
+    </Design.DataContext>
+
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,10">
+            <TextBlock Text="當前版本:" VerticalAlignment="Center"/>
+            <TextBlock Text="{Binding CurrentVersion}" Margin="10,0,0,0" VerticalAlignment="Center"/>
+        </StackPanel>
+
+        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,10">
+            <TextBlock Text="最新版本:" VerticalAlignment="Center"/>
+            <TextBlock Text="{Binding NewVersion}" Margin="10,0,0,0" VerticalAlignment="Center" FontWeight="Bold"/>
+        </StackPanel>
+
+        <StackPanel Grid.Row="2" Margin="0,0,0,10">
+            <TextBlock Text="Message:" Margin="0,0,0,5"/>
+            <Border BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                    BorderThickness="1"
+                    Padding="10"
+                    Background="{DynamicResource SystemControlBackgroundAltHighBrush}">
+                <ScrollViewer MaxHeight="120">
+                    <TextBlock Text="{Binding Message}"
+                               TextWrapping="Wrap"/>
+                </ScrollViewer>
+            </Border>
+        </StackPanel>
+
+        <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Center" Spacing="10">
+            <Button Content="{Binding UpdateButtonText}"
+                    Command="{Binding UpdateCommand}"
+                    IsEnabled="{Binding IsUpdateEnabled}"
+                    Padding="20,8"
+                    MinWidth="80"/>
+            <Button Content="略過"
+                    Command="{Binding CancelCommand}"
+                    Padding="20,8"
+                    MinWidth="80"/>
+        </StackPanel>
+    </Grid>
+</Window>

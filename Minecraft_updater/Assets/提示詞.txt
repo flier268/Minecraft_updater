@@ -1,0 +1,23 @@
+Create an isometric icon for a Minecraft mod pack updater application, 512x512 pixels:
+
+STRUCTURE (Isometric 3D cube view):
+- Top face: Bright green grass block (#79C05A) with darker green pixel patches (#6BA945) randomly distributed to simulate grass texture
+- Left face: Brown dirt texture (#976F4B) with lighter brown rectangular pixels (#B88F68) scattered to show dirt grain
+- Right face: Lighter brown dirt (#B0855D) with tan rectangular pixels (#D4A574) for depth
+
+OVERLAYS:
+1. Green download arrow in the center:
+   - Thick vertical green rectangle (#4CAF50) with dark green outline (#2E7D32)
+   - Large green triangle pointing down at the bottom
+   
+2. Blue curved sync arrow:
+   - Arc starting from left side curving to upper right
+   - Blue color (#2196F3), thick stroke
+   - Small blue triangle at the end pointing right
+
+LIGHTING:
+- Add white highlight (30% opacity) on the top grass face
+- Add subtle shadow (15% opacity) on the left dirt face
+- Bright, clean, pixel-art style like Minecraft
+
+STYLE: Isometric pixel art, clean edges, vibrant colors, transparent background, professional game icon aesthetic

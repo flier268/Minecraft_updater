@@ -1,0 +1,43 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="600" d:DesignHeight="200"
+             x:Class="Minecraft_updater.Views.FileListControl"
+             x:Name="Root">
+
+    <StackPanel Margin="0,0,0,10">
+        <DockPanel>
+            <TextBlock Text="{Binding #Root.Title}"
+                       DockPanel.Dock="Left"
+                       FontWeight="Bold"
+                       Margin="0,0,0,5"/>
+            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="5">
+                <Button Content="選取檔案"
+                        Click="OnSelectFiles"
+                        Padding="10,2"/>
+                <Button Content="選取資料夾"
+                        Click="OnSelectFolder"
+                        Padding="10,2"/>
+                <Button Content="清除"
+                        Command="{Binding #Root.ClearCommand}"
+                        Padding="10,2"/>
+            </StackPanel>
+        </DockPanel>
+        <Border BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                BorderThickness="1"
+                Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
+                Height="150">
+            <ScrollViewer VerticalScrollBarVisibility="Auto"
+                          HorizontalScrollBarVisibility="Disabled">
+                <TextBox x:Name="ListTextBox"
+                         Text="{Binding #Root.ListText}"
+                         TextWrapping="Wrap"
+                         AcceptsReturn="True"
+                         BorderThickness="0"
+                         Background="Transparent"/>
+            </ScrollViewer>
+        </Border>
+    </StackPanel>
+
+</UserControl>

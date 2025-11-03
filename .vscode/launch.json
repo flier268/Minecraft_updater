@@ -1,0 +1,52 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "無參數 (顯示使用說明)",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build",
+            "program": "${workspaceFolder}/Minecraft_updater/bin/Debug/net9.0/Minecraft_updater.dll",
+            "args": [],
+            "cwd": "${workspaceFolder}/Minecraft_updater",
+            "console": "internalConsole",
+            "stopAtEntry": false
+        },
+        {
+            "name": "更新器模式 (CheckUpdate)",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build",
+            "program": "${workspaceFolder}/Minecraft_updater/bin/Debug/net9.0/Minecraft_updater.dll",
+            "args": ["/Check_Update"],
+            "cwd": "${workspaceFolder}/Minecraft_updater",
+            "console": "internalConsole",
+            "stopAtEntry": false
+        },
+        {
+            "name": "更新包製作工具 (UpdatepackMaker)",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build",
+            "program": "${workspaceFolder}/Minecraft_updater/bin/Debug/net9.0/Minecraft_updater.dll",
+            "args": ["/updatepackMaker"],
+            "cwd": "${workspaceFolder}/Minecraft_updater",
+            "console": "internalConsole",
+            "stopAtEntry": false
+        },
+        {
+            "name": "檢查更新器版本 (CheckUpdaterVersion)",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build",
+            "program": "${workspaceFolder}/Minecraft_updater/bin/Debug/net9.0/Minecraft_updater.dll",
+            "args": ["/Check_updaterVersion"],
+            "cwd": "${workspaceFolder}/Minecraft_updater",
+            "console": "internalConsole",
+            "stopAtEntry": false
+        }
+    ]
+}

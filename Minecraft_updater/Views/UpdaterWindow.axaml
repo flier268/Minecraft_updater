@@ -1,0 +1,70 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Minecraft_updater.ViewModels"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="400" d:DesignHeight="300"
+        x:Class="Minecraft_updater.Views.UpdaterWindow"
+        x:DataType="vm:UpdaterWindowViewModel"
+        Title="Minecraft Updater"
+        Icon="/Assets/minecraft_updater.ico"
+        Width="450" Height="300"
+        MinWidth="400" MinHeight="250"
+        Topmost="True"
+        CanResize="False"
+        WindowStartupLocation="CenterScreen">
+
+    <Design.DataContext>
+        <vm:UpdaterWindowViewModel />
+    </Design.DataContext>
+
+    <Grid Margin="15">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- 進度條 -->
+        <ProgressBar Grid.Row="0"
+                     Height="25"
+                     Minimum="0"
+                     Maximum="{Binding ProgressMax}"
+                     Value="{Binding ProgressValue}"
+                     Margin="0,0,0,10"/>
+
+        <!-- 進度文字 -->
+        <TextBlock Grid.Row="1"
+                   Text="{Binding ProgressText}"
+                   Margin="0,0,0,10"
+                   FontSize="14"/>
+
+        <!-- 日誌顯示 -->
+        <Border Grid.Row="2"
+                BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                BorderThickness="1"
+                Padding="5"
+                Margin="0,0,0,10"
+                Background="{DynamicResource SystemControlBackgroundAltHighBrush}">
+            <ScrollViewer>
+                <ItemsControl ItemsSource="{Binding LogMessages}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding}" TextWrapping="Wrap" Margin="2"/>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+        </Border>
+
+        <!-- 更新資訊連結 -->
+        <TextBlock Grid.Row="3"
+                   Text="{Binding UpdateInfoText}"
+                   HorizontalAlignment="Center"
+                   VerticalAlignment="Center"
+                   Cursor="Hand"
+                   Foreground="Blue"
+                   PointerPressed="OnUpdateInfoClicked"/>
+    </Grid>
+</Window>

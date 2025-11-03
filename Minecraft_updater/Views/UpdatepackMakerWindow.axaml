@@ -1,0 +1,95 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Minecraft_updater.ViewModels"
+        xmlns:views="using:Minecraft_updater.Views"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="650" d:DesignHeight="700"
+        x:Class="Minecraft_updater.Views.UpdatepackMakerWindow"
+        x:DataType="vm:UpdatepackMakerWindowViewModel"
+        Title="Minecraft Updater - Pack Maker"
+        Icon="/Assets/minecraft_updater.ico"
+        Width="650" Height="700"
+        MinWidth="600" MinHeight="600"
+        WindowStartupLocation="CenterScreen"
+        DragDrop.AllowDrop="True">
+
+    <Design.DataContext>
+        <vm:UpdatepackMakerWindowViewModel />
+    </Design.DataContext>
+
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- 選單 -->
+        <Menu Grid.Row="0" Margin="0,0,0,10">
+            <MenuItem Header="Files">
+                <MenuItem Header="Load" Click="OnLoadClick"/>
+            </MenuItem>
+        </Menu>
+
+        <!-- Base URL 輸入 -->
+        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,10">
+            <TextBox Text="{Binding BaseUrl}"
+                     Width="380"
+                     Watermark="http://aaa.bb.com/"/>
+
+            <Border BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                    BorderThickness="1"
+                    Padding="10"
+                    Margin="10,0,0,0">
+                <StackPanel>
+                    <TextBlock Text="特殊設定" FontWeight="Bold" Margin="0,0,0,5"/>
+                    <CheckBox Content="將&quot;mod&quot;下的檔案加入刪除清單"
+                              IsChecked="{Binding AddModToDelete}"/>
+                    <CheckBox Content="將&quot;config&quot;下的檔案加入刪除清單"
+                              IsChecked="{Binding AddConfigToDelete}"
+                              Margin="0,5,0,0"/>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+
+        <TextBlock Grid.Row="2" Text="提示：將檔案或資料夾拖曳到下方的文字框中"
+                   Foreground="Gray" Margin="0,0,0,5"/>
+
+        <!-- 同步清單 -->
+        <views:FileListControl Grid.Row="3"
+                               x:Name="SyncListControl"
+                               Title="同步清單"
+                               ListText="{Binding SyncListText}"
+                               ClearCommand="{Binding ClearSyncListCommand}"
+                               ListIndex="0"/>
+
+        <!-- 刪除清單 -->
+        <views:FileListControl Grid.Row="4"
+                               x:Name="DeleteListControl"
+                               Title="刪除清單"
+                               ListText="{Binding DeleteListText}"
+                               ClearCommand="{Binding ClearDeleteListCommand}"
+                               ListIndex="1"/>
+
+        <!-- 不存在則添加清單 -->
+        <views:FileListControl Grid.Row="5"
+                               x:Name="DownloadWhenNotExistListControl"
+                               Title="不存在則添加清單"
+                               ListText="{Binding DownloadWhenNotExistText}"
+                               ClearCommand="{Binding ClearDownloadWhenNotExistListCommand}"
+                               ListIndex="2"/>
+
+        <!-- 儲存按鈕 -->
+        <Button Grid.Row="6"
+                Content="儲存"
+                HorizontalAlignment="Center"
+                Padding="20,8"
+                MinWidth="100"
+                Click="OnSaveClick"/>
+    </Grid>
+</Window>

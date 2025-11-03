@@ -1,0 +1,12 @@
+[Minecraft_updater]
+; 更新包清單的 URL (必填)
+scUrl=http://example.com/updatePackList.sc
+
+; 是否在完成後自動關閉 (true/false)
+AutoClose_AfterFinishd=false
+
+; 是否啟用日誌檔案 (true/false)
+LogFile=true
+
+; UpdatepackMaker 的基礎 URL
+updatepackMaker_BaseURL=http://aaa.bb.com/
