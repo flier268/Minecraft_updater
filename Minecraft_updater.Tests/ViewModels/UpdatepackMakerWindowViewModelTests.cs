@@ -157,9 +157,9 @@ namespace Minecraft_updater.Tests.ViewModels
             // Arrange
             var viewModel = new UpdatepackMakerWindowViewModel
             {
-                SyncListText = "mods/sync.jar||MD5||http://example.com/sync.jar\n",
-                DeleteListText = "#mods/delete.jar||MD5||http://example.com/delete.jar\n",
-                DownloadWhenNotExistText = ":config/download.cfg||MD5||http://example.com/download.cfg\n"
+                SyncListText = "mods/sync.jar||SHA256HASH||http://example.com/sync.jar\n",
+                DeleteListText = "#mods/delete.jar||SHA256HASH||http://example.com/delete.jar\n",
+                DownloadWhenNotExistText = ":config/download.cfg||SHA256HASH||http://example.com/download.cfg\n"
             };
 
             // Act
@@ -199,9 +199,9 @@ namespace Minecraft_updater.Tests.ViewModels
             var testFile = Path.Combine(_testDirectory, "test_empty.txt");
             var fileContent = @"
 
-mods/test.jar||MD5||http://example.com/test.jar
+mods/test.jar||SHA256HASH||http://example.com/test.jar
 
-#mods/old.jar||MD5||
+#mods/old.jar||SHA256HASH||
 
 ";
             File.WriteAllText(testFile, fileContent);
@@ -301,9 +301,9 @@ normal/file4.jar||JKL||http://url4.com
             // Arrange
             var viewModel = new UpdatepackMakerWindowViewModel
             {
-                SyncListText = "mods/sync.jar||MD5||http://url\n",
-                DeleteListText = "#mods/delete.jar||MD5||\n",
-                DownloadWhenNotExistText = ":config/download.cfg||MD5||http://url2\n"
+                SyncListText = "mods/sync.jar||SHA256HASH||http://url\n",
+                DeleteListText = "#mods/delete.jar||SHA256HASH||\n",
+                DownloadWhenNotExistText = ":config/download.cfg||SHA256HASH||http://url2\n"
             };
 
             // Act

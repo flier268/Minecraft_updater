@@ -23,21 +23,21 @@ namespace Minecraft_updater.Services
     /// </summary>
     public class PackValidationService
     {
-        private static readonly Regex MD5Regex = new("^[a-fA-F0-9]{32}$", RegexOptions.Compiled);
+        private static readonly Regex SHA256Regex = new("^[a-fA-F0-9]{64}$", RegexOptions.Compiled);
         private static readonly Regex UrlRegex = new(
             @"^https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)$",
             RegexOptions.Compiled | RegexOptions.IgnoreCase
         );
 
         /// <summary>
-        /// 驗證 MD5 雜湊值格式（32 個十六進位字元）
+        /// 驗證 SHA256 雜湊值格式（64 個十六進位字元）
         /// </summary>
-        public bool ValidateMD5(string md5)
+        public bool ValidateSHA256(string sha256)
         {
-            if (string.IsNullOrWhiteSpace(md5))
+            if (string.IsNullOrWhiteSpace(sha256))
                 return false;
 
-            return MD5Regex.IsMatch(md5);
+            return SHA256Regex.IsMatch(sha256);
         }
 
         /// <summary>
@@ -86,10 +86,10 @@ namespace Minecraft_updater.Services
                 return ValidationResult.Failure($"無效或不安全的路徑: {pack.Path}");
             }
 
-            // MD5 可以是空字串（用於某些特殊操作），但如果有值就要驗證格式
-            if (!string.IsNullOrWhiteSpace(pack.MD5) && !ValidateMD5(pack.MD5))
+            // SHA256 可以是空字串（用於某些特殊操作），但如果有值就要驗證格式
+            if (!string.IsNullOrWhiteSpace(pack.SHA256) && !ValidateSHA256(pack.SHA256))
             {
-                return ValidationResult.Failure($"無效的 MD5 格式: {pack.MD5}");
+                return ValidationResult.Failure($"無效的 SHA256 格式: {pack.SHA256}");
             }
 
             // 如果不是刪除操作，則需要有效的 URL（包括一般同步和"僅在不存在時下載"）

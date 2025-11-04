@@ -15,7 +15,7 @@ namespace Minecraft_updater.Services
 
         /// <summary>
         /// 將單個 Pack 序列化為一行字串
-        /// 格式: Path||MD5||URL
+        /// 格式: Path||SHA256||URL
         /// 前綴: # = 刪除, : = 僅在檔案不存在時下載
         /// </summary>
         public string SerializeLine(Pack pack)
@@ -24,7 +24,7 @@ namespace Minecraft_updater.Services
                 pack.Delete ? "#"
                 : pack.DownloadWhenNotExist ? ":"
                 : "";
-            return $"{prefix}{pack.Path}{Delimiter}{pack.MD5}{Delimiter}{pack.URL}";
+            return $"{prefix}{pack.Path}{Delimiter}{pack.SHA256}{Delimiter}{pack.URL}";
         }
 
         /// <summary>

@@ -13,16 +13,16 @@ namespace Minecraft_updater.Tests.Services
             _validator = new PackValidationService();
         }
 
-        #region MD5 Validation Tests
+        #region SHA256 Validation Tests
 
         [Theory]
-        [InlineData("5d41402abc4b2a76b9719d911017c592")] // Valid MD5
-        [InlineData("098F6BCD4621D373CADE4E832627B4F6")] // Valid MD5 uppercase
-        [InlineData("5D41402ABC4B2A76B9719D911017C592")] // Valid MD5 mixed case
-        public void ValidateMD5_ValidHash_ReturnsTrue(string md5)
+        [InlineData("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855")] // Valid SHA256
+        [InlineData("E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855")] // Valid SHA256 uppercase
+        [InlineData("E3b0c44298fc1C149afbf4c8996fb92427AE41e4649b934ca495991b7852B855")] // Valid SHA256 mixed case
+        public void ValidateSHA256_ValidHash_ReturnsTrue(string sha256)
         {
             // Act
-            var result = _validator.ValidateMD5(md5);
+            var result = _validator.ValidateSHA256(sha256);
 
             // Assert
             result.Should().BeTrue();
@@ -31,14 +31,14 @@ namespace Minecraft_updater.Tests.Services
         [Theory]
         [InlineData("")] // Empty
         [InlineData("   ")] // Whitespace
-        [InlineData("5d41402abc4b2a76b9719d911017c59")] // Too short (31 chars)
-        [InlineData("5d41402abc4b2a76b9719d911017c5921")] // Too long (33 chars)
-        [InlineData("5d41402abc4b2a76b9719d911017c59g")] // Invalid character 'g'
+        [InlineData("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b85")] // Too short (63 chars)
+        [InlineData("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b8555")] // Too long (65 chars)
+        [InlineData("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b85g")] // Invalid character 'g'
         [InlineData("not a valid hash at all")]
-        public void ValidateMD5_InvalidHash_ReturnsFalse(string md5)
+        public void ValidateSHA256_InvalidHash_ReturnsFalse(string sha256)
         {
             // Act
-            var result = _validator.ValidateMD5(md5);
+            var result = _validator.ValidateSHA256(sha256);
 
             // Assert
             result.Should().BeFalse();
@@ -171,7 +171,7 @@ namespace Minecraft_updater.Tests.Services
             var pack = new Pack
             {
                 Path = "mods/TestMod.jar",
-                MD5 = "5d41402abc4b2a76b9719d911017c592",
+                SHA256 = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
                 URL = "http://example.com/TestMod.jar",
                 Delete = false,
                 DownloadWhenNotExist = false
@@ -192,7 +192,7 @@ namespace Minecraft_updater.Tests.Services
             var pack = new Pack
             {
                 Path = "mods/OldMod",
-                MD5 = "5d41402abc4b2a76b9719d911017c592",
+                SHA256 = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
                 URL = "", // Delete operations don't need URL
                 Delete = true,
                 DownloadWhenNotExist = false
@@ -212,7 +212,7 @@ namespace Minecraft_updater.Tests.Services
             var pack = new Pack
             {
                 Path = "config/optional.cfg",
-                MD5 = "5d41402abc4b2a76b9719d911017c592",
+                SHA256 = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
                 URL = "http://example.com/optional.cfg",
                 Delete = false,
                 DownloadWhenNotExist = true
@@ -232,7 +232,7 @@ namespace Minecraft_updater.Tests.Services
             var pack = new Pack
             {
                 Path = "../../../etc/passwd",
-                MD5 = "5d41402abc4b2a76b9719d911017c592",
+                SHA256 = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
                 URL = "http://example.com/file.jar"
             };
 
@@ -245,13 +245,13 @@ namespace Minecraft_updater.Tests.Services
         }
 
         [Fact]
-        public void ValidatePack_InvalidMD5_ReturnsFailure()
+        public void ValidatePack_InvalidSHA256_ReturnsFailure()
         {
             // Arrange
             var pack = new Pack
             {
                 Path = "mods/Mod.jar",
-                MD5 = "invalid-md5-hash",
+                SHA256 = "invalid-sha256-hash",
                 URL = "http://example.com/Mod.jar"
             };
 
@@ -260,17 +260,17 @@ namespace Minecraft_updater.Tests.Services
 
             // Assert
             result.IsValid.Should().BeFalse();
-            result.ErrorMessage.Should().Contain("MD5");
+            result.ErrorMessage.Should().Contain("SHA256");
         }
 
         [Fact]
-        public void ValidatePack_EmptyMD5_ReturnsSuccess()
+        public void ValidatePack_EmptySHA256_ReturnsSuccess()
         {
-            // Arrange - Empty MD5 is allowed for some operations
+            // Arrange - Empty SHA256 is allowed for some operations
             var pack = new Pack
             {
                 Path = "mods/Mod.jar",
-                MD5 = "",
+                SHA256 = "",
                 URL = "http://example.com/Mod.jar"
             };
 
@@ -288,7 +288,7 @@ namespace Minecraft_updater.Tests.Services
             var pack = new Pack
             {
                 Path = "mods/Mod.jar",
-                MD5 = "5d41402abc4b2a76b9719d911017c592",
+                SHA256 = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
                 URL = "", // Normal sync needs URL
                 Delete = false,
                 DownloadWhenNotExist = false
@@ -309,7 +309,7 @@ namespace Minecraft_updater.Tests.Services
             var pack = new Pack
             {
                 Path = "mods/Mod.jar",
-                MD5 = "5d41402abc4b2a76b9719d911017c592",
+                SHA256 = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
                 URL = "not-a-valid-url"
             };
 
@@ -328,7 +328,7 @@ namespace Minecraft_updater.Tests.Services
             var pack = new Pack
             {
                 Path = "config/file.cfg",
-                MD5 = "5d41402abc4b2a76b9719d911017c592",
+                SHA256 = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
                 URL = "",
                 DownloadWhenNotExist = true
             };
@@ -348,7 +348,7 @@ namespace Minecraft_updater.Tests.Services
             var pack = new Pack
             {
                 Path = "/etc/passwd",
-                MD5 = "",
+                SHA256 = "",
                 URL = "",
                 Delete = true
             };

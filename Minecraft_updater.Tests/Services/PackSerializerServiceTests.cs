@@ -20,7 +20,7 @@ namespace Minecraft_updater.Tests.Services
             var pack = new Pack
             {
                 Path = "mods/Botania-1.20.jar",
-                MD5 = "abc123def456",
+                SHA256 = "abc123def456",
                 URL = "http://example.com/Botania-1.20.jar",
                 Delete = false,
                 DownloadWhenNotExist = false
@@ -40,7 +40,7 @@ namespace Minecraft_updater.Tests.Services
             var pack = new Pack
             {
                 Path = "mods/OldMod",
-                MD5 = "xyz789",
+                SHA256 = "xyz789",
                 URL = "",
                 Delete = true,
                 DownloadWhenNotExist = false
@@ -60,7 +60,7 @@ namespace Minecraft_updater.Tests.Services
             var pack = new Pack
             {
                 Path = "config/optional.cfg",
-                MD5 = "789ghi",
+                SHA256 = "789ghi",
                 URL = "http://example.com/optional.cfg",
                 Delete = false,
                 DownloadWhenNotExist = true
@@ -80,7 +80,7 @@ namespace Minecraft_updater.Tests.Services
             var pack = new Pack
             {
                 Path = "",
-                MD5 = "",
+                SHA256 = "",
                 URL = ""
             };
 
@@ -100,7 +100,7 @@ namespace Minecraft_updater.Tests.Services
                 new Pack
                 {
                     Path = "mods/TestMod.jar",
-                    MD5 = "abc123",
+                    SHA256 = "abc123",
                     URL = "http://example.com/TestMod.jar"
                 }
             };
@@ -122,7 +122,7 @@ namespace Minecraft_updater.Tests.Services
                 new Pack
                 {
                     Path = "mods/TestMod.jar",
-                    MD5 = "abc123",
+                    SHA256 = "abc123",
                     URL = "http://example.com/TestMod.jar"
                 }
             };
@@ -141,18 +141,18 @@ namespace Minecraft_updater.Tests.Services
             // Arrange
             var packs = new[]
             {
-                new Pack { Path = "mods/Mod1.jar", MD5 = "md51", URL = "http://url1" },
+                new Pack { Path = "mods/Mod1.jar", SHA256 = "sha2561", URL = "http://url1" },
                 new Pack
                 {
                     Path = "mods/OldMod",
-                    MD5 = "md52",
+                    SHA256 = "sha2562",
                     URL = "",
                     Delete = true
                 },
                 new Pack
                 {
                     Path = "config/opt.cfg",
-                    MD5 = "md53",
+                    SHA256 = "sha2563",
                     URL = "http://url3",
                     DownloadWhenNotExist = true
                 }
@@ -168,9 +168,9 @@ namespace Minecraft_updater.Tests.Services
             );
             lines.Should().HaveCount(4); // Version + 3 packs
             lines[0].Should().Be("MinVersion=1.0.0");
-            lines[1].Should().Be("mods/Mod1.jar||md51||http://url1");
-            lines[2].Should().Be("#mods/OldMod||md52||");
-            lines[3].Should().Be(":config/opt.cfg||md53||http://url3");
+            lines[1].Should().Be("mods/Mod1.jar||sha2561||http://url1");
+            lines[2].Should().Be("#mods/OldMod||sha2562||");
+            lines[3].Should().Be(":config/opt.cfg||sha2563||http://url3");
         }
 
         [Fact]
@@ -206,7 +206,7 @@ namespace Minecraft_updater.Tests.Services
             var pack = new Pack
             {
                 Path = "mods/Special-Mod_v1.0+build.jar",
-                MD5 = "hash123",
+                SHA256 = "hash123",
                 URL = "http://example.com/file.jar"
             };
 
@@ -224,7 +224,7 @@ namespace Minecraft_updater.Tests.Services
             var pack = new Pack
             {
                 Path = "mods/Mod.jar",
-                MD5 = "hash",
+                SHA256 = "hash",
                 URL = "http://example.com/file.jar?version=1.2&build=latest"
             };
 

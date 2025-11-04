@@ -32,59 +32,59 @@ namespace Minecraft_updater.Tests.Services
             }
         }
 
-        #region MD5 Tests
+        #region SHA256 Tests
 
         [Fact]
-        public void GetMD5_ValidFile_ShouldReturnCorrectMD5()
+        public void GetSHA256_ValidFile_ShouldReturnCorrectSHA256()
         {
             // Arrange
             var testFile = Path.Combine(_testDirectory, "test.txt");
             File.WriteAllText(testFile, "Hello World");
 
             // Act
-            var md5 = PrivateFunction.GetMD5(testFile);
+            var sha256 = PrivateFunction.GetSHA256(testFile);
 
             // Assert
-            md5.Should().NotBeNullOrEmpty();
-            md5.Should().HaveLength(32); // MD5 hash is 32 characters in hex
-            md5.Should().MatchRegex("^[A-F0-9]+$"); // Should be uppercase hex
+            sha256.Should().NotBeNullOrEmpty();
+            sha256.Should().HaveLength(64); // SHA256 hash is 64 characters in hex
+            sha256.Should().MatchRegex("^[a-f0-9]+$"); // Should be lowercase hex
         }
 
         [Fact]
-        public void GetMD5_EmptyFile_ShouldReturnMD5()
+        public void GetSHA256_EmptyFile_ShouldReturnSHA256()
         {
             // Arrange
             var testFile = Path.Combine(_testDirectory, "empty.txt");
             File.WriteAllText(testFile, "");
 
             // Act
-            var md5 = PrivateFunction.GetMD5(testFile);
+            var sha256 = PrivateFunction.GetSHA256(testFile);
 
             // Assert
-            md5.Should().NotBeNullOrEmpty();
-            md5.Should().Be("D41D8CD98F00B204E9800998ECF8427E"); // MD5 of empty string
+            sha256.Should().NotBeNullOrEmpty();
+            sha256.Should().Be("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"); // SHA256 of empty string
         }
 
         [Fact]
-        public void GetMD5_SameContent_ShouldReturnSameMD5()
+        public void GetSHA256_SameContent_ShouldReturnSameSHA256()
         {
             // Arrange
             var file1 = Path.Combine(_testDirectory, "file1.txt");
             var file2 = Path.Combine(_testDirectory, "file2.txt");
-            var content = "Test content for MD5";
+            var content = "Test content for SHA256";
             File.WriteAllText(file1, content);
             File.WriteAllText(file2, content);
 
             // Act
-            var md5_1 = PrivateFunction.GetMD5(file1);
-            var md5_2 = PrivateFunction.GetMD5(file2);
+            var sha256_1 = PrivateFunction.GetSHA256(file1);
+            var sha256_2 = PrivateFunction.GetSHA256(file2);
 
             // Assert
-            md5_1.Should().Be(md5_2);
+            sha256_1.Should().Be(sha256_2);
         }
 
         [Fact]
-        public void GetMD5_DifferentContent_ShouldReturnDifferentMD5()
+        public void GetSHA256_DifferentContent_ShouldReturnDifferentSHA256()
         {
             // Arrange
             var file1 = Path.Combine(_testDirectory, "file1.txt");
@@ -93,28 +93,28 @@ namespace Minecraft_updater.Tests.Services
             File.WriteAllText(file2, "Content B");
 
             // Act
-            var md5_1 = PrivateFunction.GetMD5(file1);
-            var md5_2 = PrivateFunction.GetMD5(file2);
+            var sha256_1 = PrivateFunction.GetSHA256(file1);
+            var sha256_2 = PrivateFunction.GetSHA256(file2);
 
             // Assert
-            md5_1.Should().NotBe(md5_2);
+            sha256_1.Should().NotBe(sha256_2);
         }
 
         [Fact]
-        public void GetMD5_NonExistentFile_ShouldThrow()
+        public void GetSHA256_NonExistentFile_ShouldThrow()
         {
             // Arrange
             var nonExistentFile = Path.Combine(_testDirectory, "nonexistent.txt");
 
             // Act
-            Action act = () => PrivateFunction.GetMD5(nonExistentFile);
+            Action act = () => PrivateFunction.GetSHA256(nonExistentFile);
 
             // Assert
             act.Should().Throw<FileNotFoundException>();
         }
 
         [Fact]
-        public void GetMD5_BinaryFile_ShouldReturnMD5()
+        public void GetSHA256_BinaryFile_ShouldReturnSHA256()
         {
             // Arrange
             var binaryFile = Path.Combine(_testDirectory, "binary.dat");
@@ -122,11 +122,11 @@ namespace Minecraft_updater.Tests.Services
             File.WriteAllBytes(binaryFile, binaryData);
 
             // Act
-            var md5 = PrivateFunction.GetMD5(binaryFile);
+            var sha256 = PrivateFunction.GetSHA256(binaryFile);
 
             // Assert
-            md5.Should().NotBeNullOrEmpty();
-            md5.Should().HaveLength(32);
+            sha256.Should().NotBeNullOrEmpty();
+            sha256.Should().HaveLength(64);
         }
 
         #endregion

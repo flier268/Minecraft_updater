@@ -25,7 +25,7 @@ namespace Minecraft_updater.Tests.Services
             // Assert
             result.Should().NotBeNull();
             result!.Value.Path.Should().Be("mods/Botania-1.20.jar");
-            result.Value.MD5.Should().Be("abc123def456");
+            result.Value.SHA256.Should().Be("abc123def456");
             result.Value.URL.Should().Be("http://example.com/Botania-1.20.jar");
             result.Value.Delete.Should().BeFalse();
             result.Value.DownloadWhenNotExist.Should().BeFalse();
@@ -43,7 +43,7 @@ namespace Minecraft_updater.Tests.Services
             // Assert
             result.Should().NotBeNull();
             result!.Value.Path.Should().Be("mods/OldMod");
-            result.Value.MD5.Should().Be("xyz789");
+            result.Value.SHA256.Should().Be("xyz789");
             result.Value.Delete.Should().BeTrue();
             result.Value.DownloadWhenNotExist.Should().BeFalse();
         }
@@ -60,7 +60,7 @@ namespace Minecraft_updater.Tests.Services
             // Assert
             result.Should().NotBeNull();
             result!.Value.Path.Should().Be("config/optional.cfg");
-            result.Value.MD5.Should().Be("789ghi");
+            result.Value.SHA256.Should().Be("789ghi");
             result.Value.URL.Should().Be("http://example.com/optional.cfg");
             result.Value.Delete.Should().BeFalse();
             result.Value.DownloadWhenNotExist.Should().BeTrue();

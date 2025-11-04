@@ -9,12 +9,12 @@ namespace Minecraft_updater.Services
 {
     public class PrivateFunction
     {
-        #region MD5 計算
-        public static string GetMD5(string filepath)
+        #region SHA256 計算
+        public static string GetSHA256(string filepath)
         {
             using var targetFile = new FileStream(filepath, FileMode.Open, FileAccess.Read);
-            using var md5 = MD5.Create();
-            return ByteToString(md5.ComputeHash(targetFile));
+            using var sha256 = SHA256.Create();
+            return ByteToString(sha256.ComputeHash(targetFile));
         }
 
         private static readonly StringBuilder sb = new StringBuilder();
@@ -26,7 +26,7 @@ namespace Minecraft_updater.Services
             {
                 sb.Append(i.ToString("x2"));
             }
-            return sb.ToString().ToUpper();
+            return sb.ToString();
         }
         #endregion
 

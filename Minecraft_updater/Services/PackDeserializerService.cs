@@ -50,7 +50,7 @@ namespace Minecraft_updater.Services
             return new Pack
             {
                 Path = match.Groups[1].ToString(),
-                MD5 = match.Groups[2]?.ToString() ?? "",
+                SHA256 = match.Groups[2]?.ToString() ?? "",
                 URL = match.Groups[3]?.ToString() ?? "",
                 Delete = delete,
                 IsChecked = false,

@@ -26,7 +26,7 @@ namespace Minecraft_updater.Tests.Integration
             var originalPack = new Pack
             {
                 Path = "mods/Botania-1.20.jar",
-                MD5 = "5d41402abc4b2a76b9719d911017c592",
+                SHA256 = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
                 URL = "http://example.com/Botania-1.20.jar",
                 Delete = false,
                 DownloadWhenNotExist = false
@@ -41,7 +41,7 @@ namespace Minecraft_updater.Tests.Integration
             // Assert
             deserialized.Should().NotBeNull();
             deserialized!.Value.Path.Should().Be(originalPack.Path);
-            deserialized.Value.MD5.Should().Be(originalPack.MD5);
+            deserialized.Value.SHA256.Should().Be(originalPack.SHA256);
             deserialized.Value.URL.Should().Be(originalPack.URL);
             deserialized.Value.Delete.Should().Be(originalPack.Delete);
             deserialized.Value.DownloadWhenNotExist.Should().Be(originalPack.DownloadWhenNotExist);
@@ -54,7 +54,7 @@ namespace Minecraft_updater.Tests.Integration
             var originalPack = new Pack
             {
                 Path = "mods/OldMod",
-                MD5 = "098f6bcd4621d373cade4e832627b4f6",
+                SHA256 = "6ca13d52ca70c883e0f0bb101e425a89e8624de51db2d2392593af6a84118090",
                 URL = "",
                 Delete = true,
                 DownloadWhenNotExist = false
@@ -77,7 +77,7 @@ namespace Minecraft_updater.Tests.Integration
             var originalPack = new Pack
             {
                 Path = "config/optional.cfg",
-                MD5 = "5d41402abc4b2a76b9719d911017c592",
+                SHA256 = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
                 URL = "http://example.com/optional.cfg",
                 Delete = false,
                 DownloadWhenNotExist = true
@@ -102,20 +102,20 @@ namespace Minecraft_updater.Tests.Integration
                 new Pack
                 {
                     Path = "mods/Mod1.jar",
-                    MD5 = "5d41402abc4b2a76b9719d911017c592",
+                    SHA256 = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
                     URL = "http://example.com/Mod1.jar"
                 },
                 new Pack
                 {
                     Path = "mods/OldMod",
-                    MD5 = "098f6bcd4621d373cade4e832627b4f6",
+                    SHA256 = "6ca13d52ca70c883e0f0bb101e425a89e8624de51db2d2392593af6a84118090",
                     URL = "",
                     Delete = true
                 },
                 new Pack
                 {
                     Path = "config/optional.cfg",
-                    MD5 = "e4d909c290d0fb1ca068ffaddf22cbd0",
+                    SHA256 = "d2a84f4b8b650937ec8f73cd8be2c74add5a911ba64df27458ed8229da804a26",
                     URL = "http://example.com/optional.cfg",
                     DownloadWhenNotExist = true
                 }
@@ -159,7 +159,7 @@ namespace Minecraft_updater.Tests.Integration
                 new Pack
                 {
                     Path = "mods/Mod.jar",
-                    MD5 = "5d41402abc4b2a76b9719d911017c592",
+                    SHA256 = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
                     URL = "http://example.com/Mod.jar"
                 }
             };
@@ -183,7 +183,7 @@ namespace Minecraft_updater.Tests.Integration
             var originalPack = new Pack
             {
                 Path = "mods/Special-Mod_v1.0+build.jar",
-                MD5 = "5d41402abc4b2a76b9719d911017c592",
+                SHA256 = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
                 URL = "http://example.com/Special-Mod_v1.0+build.jar"
             };
 
@@ -202,7 +202,7 @@ namespace Minecraft_updater.Tests.Integration
             var originalPack = new Pack
             {
                 Path = "mods/Mod.jar",
-                MD5 = "5d41402abc4b2a76b9719d911017c592",
+                SHA256 = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
                 URL = "http://example.com/file.jar?version=1.2&build=latest"
             };
 
@@ -223,7 +223,7 @@ namespace Minecraft_updater.Tests.Integration
                 new Pack
                 {
                     Path = "mods/TestMod.jar",
-                    MD5 = "5d41402abc4b2a76b9719d911017c592",
+                    SHA256 = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
                     URL = "http://example.com/TestMod.jar"
                 }
             };
@@ -295,7 +295,7 @@ mods/Mod.jar||5d41402abc4b2a76b9719d911017c592||http://example.com/Mod.jar";
                 .Select(i => new Pack
                 {
                     Path = $"mods/Mod{i}.jar",
-                    MD5 = $"{i:D32}", // Pad to 32 characters
+                    SHA256 = $"{i:D32}", // Pad to 32 characters
                     URL = $"http://example.com/Mod{i}.jar"
                 })
                 .ToArray();

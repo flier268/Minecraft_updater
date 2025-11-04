@@ -194,7 +194,7 @@ namespace Minecraft_updater.ViewModels
         )
         {
             var name = filePath.Substring(basepathLength);
-            var md5 = PrivateFunction.GetMD5(filePath);
+            var sha256 = PrivateFunction.GetSHA256(filePath);
             var url = BaseUrl + name.Replace("\\", "/");
             var delimiterIndex = name.IndexOfAny(_delimiter);
 
@@ -204,7 +204,7 @@ namespace Minecraft_updater.ViewModels
                     var syncPack = new Pack
                     {
                         Path = name,
-                        MD5 = md5,
+                        SHA256 = sha256,
                         URL = url,
                         Delete = false,
                         DownloadWhenNotExist = false,
@@ -223,7 +223,7 @@ namespace Minecraft_updater.ViewModels
                         var deletePack = new Pack
                         {
                             Path = deleteName,
-                            MD5 = md5,
+                            SHA256 = sha256,
                             URL = "",
                             Delete = true,
                         };
@@ -239,7 +239,7 @@ namespace Minecraft_updater.ViewModels
                     var deletePackDirect = new Pack
                     {
                         Path = deleteNameDirect,
-                        MD5 = md5,
+                        SHA256 = sha256,
                         URL = "",
                         Delete = true,
                     };
@@ -254,7 +254,7 @@ namespace Minecraft_updater.ViewModels
                     var downloadPack = new Pack
                     {
                         Path = downloadName,
-                        MD5 = md5,
+                        SHA256 = sha256,
                         URL = url,
                         DownloadWhenNotExist = true,
                     };

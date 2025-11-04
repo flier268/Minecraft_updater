@@ -237,7 +237,7 @@ namespace Minecraft_updater.ViewModels
 
                     foreach (var file in matchedFiles)
                     {
-                        if (PrivateFunction.GetMD5(file) != item.MD5)
+                        if (PrivateFunction.GetSHA256(file) != item.SHA256)
                         {
                             try
                             {
@@ -273,7 +273,7 @@ namespace Minecraft_updater.ViewModels
                     {
                         if (
                             !item.DownloadWhenNotExist
-                            && PrivateFunction.GetMD5(filePath) != item.MD5
+                            && PrivateFunction.GetSHA256(filePath) != item.SHA256
                         )
                         {
                             needUpdate = true;
