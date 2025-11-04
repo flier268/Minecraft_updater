@@ -116,6 +116,7 @@ namespace Minecraft_updater.ViewModels
         private async Task CheckPackAsync()
         {
             var list = new List<Pack>();
+            string? minimumVersion = null;
 
             // 下載清單
             var tempFile = PrivateFunction.CreateTmpFile();
@@ -138,8 +139,63 @@ namespace Minecraft_updater.ViewModels
                     var line = await reader.ReadLineAsync();
                     if (!string.IsNullOrWhiteSpace(line))
                     {
-                        list.Add(Packs.Resolve(line));
+                        // 嘗試解析最低版本號（只在第一次遇到時設定）
+                        if (minimumVersion == null)
+                        {
+                            var parsedVersion = Packs.TryParseMinimumVersion(line);
+                            if (parsedVersion != null)
+                            {
+                                minimumVersion = parsedVersion;
+                                AddLog($"檔案要求最低版本: {minimumVersion}");
+                                continue; // 跳過此行，不解析為 Pack
+                            }
+                        }
+
+                        list.Add(Packs.Resolve(line, minimumVersion));
                     }
+                }
+
+                // 檢查版本號是否符合要求
+                var currentVersion =
+                    Assembly.GetExecutingAssembly().GetName().Version ?? new Version("1.0.1.0");
+
+                Version requiredVersion;
+                if (string.IsNullOrEmpty(minimumVersion))
+                {
+                    // 如果沒有指定最低版本，使用預設值 1.0.1.0
+                    requiredVersion = new Version("1.0.1.0");
+                    AddLog("檔案未指定最低版本要求，使用預設值 1.0.1.0");
+                }
+                else
+                {
+                    // 有指定版本號，嘗試解析
+                    if (!Version.TryParse(minimumVersion, out requiredVersion!))
+                    {
+                        requiredVersion = new Version("1.0.1.0");
+                        AddLog(
+                            $"無法解析最低版本號 '{minimumVersion}'，使用預設值 1.0.1.0",
+                            "#FFA500"
+                        );
+                    }
+                    else
+                    {
+                        AddLog($"檔案要求最低版本: {minimumVersion}");
+                    }
+                }
+
+                // 檢查當前版本是否符合要求
+                if (currentVersion < requiredVersion)
+                {
+                    AddLog(
+                        $"版本不符合要求！目前版本: {currentVersion}，需要版本: {requiredVersion}",
+                        "#FF0000"
+                    );
+                    AddLog("請更新 Minecraft updater 到最新版本", "#FF0000");
+                    return;
+                }
+                else
+                {
+                    AddLog($"版本檢查通過（目前版本: {currentVersion}）", "#00FF00");
                 }
             }
             catch (HttpRequestException ex)

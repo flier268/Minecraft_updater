@@ -272,6 +272,12 @@ namespace Minecraft_updater.ViewModels
                     if (string.IsNullOrWhiteSpace(line))
                         continue;
 
+                    // 跳過最低版本號行（載入時不需要處理，儲存時會自動加入當前版本）
+                    if (Packs.TryParseMinimumVersion(line) != null)
+                    {
+                        continue;
+                    }
+
                     if (line.StartsWith("#"))
                     {
                         sb2.AppendLine(line);
@@ -362,6 +368,14 @@ namespace Minecraft_updater.ViewModels
         public string GetSaveContent()
         {
             var sb = new StringBuilder();
+
+            // 自動加入當前程式版本號作為最低版本號
+            // 使用三個分隔符 (MinVersion||x.x.x.x||) 格式以確保向後兼容
+            // 舊版本在解析時會將其視為檔案路徑 "MinVersion"，但因為檔案不存在而被忽略
+            var currentVersion =
+                Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "1.0.1.0";
+            sb.AppendLine($"MinVersion||{currentVersion}||");
+
             sb.Append(SyncListText);
             sb.Append(DeleteListText);
             sb.Append(DownloadWhenNotExistText);

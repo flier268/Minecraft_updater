@@ -137,7 +137,7 @@ namespace Minecraft_updater.Tests.ViewModels
         }
 
         [Fact]
-        public void GetSaveContent_EmptyLists_ShouldReturnEmptyString()
+        public void GetSaveContent_EmptyLists_ShouldReturnOnlyMinVersion()
         {
             // Arrange
             var viewModel = new UpdatepackMakerWindowViewModel();
@@ -146,7 +146,9 @@ namespace Minecraft_updater.Tests.ViewModels
             var content = viewModel.GetSaveContent();
 
             // Assert
-            content.Should().Be(string.Empty);
+            // 現在總是會包含當前程式版本號作為最低版本
+            content.Should().StartWith("MinVersion||");
+            content.Should().Contain("||\n");
         }
 
         [Fact]
@@ -308,7 +310,9 @@ normal/file4.jar||JKL||http://url4.com
             var content = viewModel.GetSaveContent();
 
             // Assert
-            content.Should().Be("SYNC\nDELETE\nDOWNLOAD\n");
+            // 現在會先包含 MinVersion 行，然後是原有的內容順序
+            content.Should().StartWith("MinVersion||");
+            content.Should().EndWith("SYNC\nDELETE\nDOWNLOAD\n");
         }
 
         [Fact]

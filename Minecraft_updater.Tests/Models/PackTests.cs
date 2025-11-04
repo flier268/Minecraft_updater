@@ -180,5 +180,170 @@ namespace Minecraft_updater.Tests.Models
             result.DownloadWhenNotExist.Should().BeTrue();
             result.URL.Should().Contain("?key=abc");
         }
+
+        [Fact]
+        public void Resolve_WithMinimumVersion_ShouldSetMinimumVersion()
+        {
+            // Arrange
+            var input = "mods/example.jar||ABC123||https://example.com/file.jar";
+            var minimumVersion = "1.2.3.0";
+
+            // Act
+            var result = Packs.Resolve(input, minimumVersion);
+
+            // Assert
+            result.MinimumVersion.Should().Be("1.2.3.0");
+            result.Path.Should().Be("mods/example.jar");
+            result.MD5.Should().Be("ABC123");
+        }
+
+        [Fact]
+        public void Resolve_WithoutMinimumVersion_ShouldHaveNullMinimumVersion()
+        {
+            // Arrange
+            var input = "mods/example.jar||ABC123||https://example.com/file.jar";
+
+            // Act
+            var result = Packs.Resolve(input);
+
+            // Assert
+            result.MinimumVersion.Should().BeNull();
+        }
+
+        [Fact]
+        public void TryParseMinimumVersion_ValidMinVersion_ShouldReturnVersion()
+        {
+            // Arrange
+            var input = "MinVersion||1.2.3.4";
+
+            // Act
+            var result = Packs.TryParseMinimumVersion(input);
+
+            // Assert
+            result.Should().Be("1.2.3.4");
+        }
+
+        [Fact]
+        public void TryParseMinimumVersion_ValidMinimumVersion_ShouldReturnVersion()
+        {
+            // Arrange
+            var input = "MinimumVersion||2.0.0.0";
+
+            // Act
+            var result = Packs.TryParseMinimumVersion(input);
+
+            // Assert
+            result.Should().Be("2.0.0.0");
+        }
+
+        [Fact]
+        public void TryParseMinimumVersion_CaseInsensitive_ShouldWork()
+        {
+            // Arrange
+            var input = "minversion||1.0.0.0";
+
+            // Act
+            var result = Packs.TryParseMinimumVersion(input);
+
+            // Assert
+            result.Should().Be("1.0.0.0");
+        }
+
+        [Fact]
+        public void TryParseMinimumVersion_WithWhitespace_ShouldTrim()
+        {
+            // Arrange
+            var input = "  MinVersion||  1.5.0.0  ";
+
+            // Act
+            var result = Packs.TryParseMinimumVersion(input);
+
+            // Assert
+            result.Should().Be("1.5.0.0");
+        }
+
+        [Fact]
+        public void TryParseMinimumVersion_InvalidFormat_ShouldReturnNull()
+        {
+            // Arrange
+            var input = "mods/example.jar||ABC123||https://example.com/file.jar";
+
+            // Act
+            var result = Packs.TryParseMinimumVersion(input);
+
+            // Assert
+            result.Should().BeNull();
+        }
+
+        [Fact]
+        public void TryParseMinimumVersion_EmptyVersion_ShouldReturnNull()
+        {
+            // Arrange
+            var input = "MinVersion||";
+
+            // Act
+            var result = Packs.TryParseMinimumVersion(input);
+
+            // Assert
+            result.Should().BeNull();
+        }
+
+        [Fact]
+        public void TryParseMinimumVersion_NullInput_ShouldReturnNull()
+        {
+            // Arrange
+            string? input = null;
+
+            // Act
+            var result = Packs.TryParseMinimumVersion(input);
+
+            // Assert
+            result.Should().BeNull();
+        }
+
+        [Fact]
+        public void TryParseMinimumVersion_EmptyString_ShouldReturnNull()
+        {
+            // Arrange
+            var input = "";
+
+            // Act
+            var result = Packs.TryParseMinimumVersion(input);
+
+            // Assert
+            result.Should().BeNull();
+        }
+
+        [Fact]
+        public void TryParseMinimumVersion_WithThreeSeparators_ShouldWork()
+        {
+            // Arrange - 使用向後兼容格式 (三個 ||)
+            var input = "MinVersion||1.3.0.0||";
+
+            // Act
+            var result = Packs.TryParseMinimumVersion(input);
+
+            // Assert
+            result.Should().Be("1.3.0.0");
+        }
+
+        [Fact]
+        public void Resolve_BackwardCompatibleMinVersionFormat_ShouldBeIgnoredByOldVersion()
+        {
+            // Arrange - 模擬舊版本處理 MinVersion||x.x.x.x|| 格式
+            // 舊版本會將其解析為: Path="MinVersion", MD5="x.x.x.x", URL=""
+            var input = "MinVersion||1.2.0.0||";
+
+            // Act
+            var result = Packs.Resolve(input);
+
+            // Assert
+            // 舊版本會把它當作一個檔案來處理，但因為檔案不存在，會被忽略
+            result.Path.Should().Be("MinVersion");
+            result.MD5.Should().Be("1.2.0.0");
+            result.URL.Should().Be("");
+            result.Delete.Should().BeFalse();
+            result.DownloadWhenNotExist.Should().BeFalse();
+        }
     }
 }
