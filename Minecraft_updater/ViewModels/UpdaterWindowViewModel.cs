@@ -22,6 +22,7 @@ namespace Minecraft_updater.ViewModels
         private readonly string _appPath;
         private readonly string _url;
         private readonly bool _autoCloseAfterFinished;
+        private readonly PackDeserializerService _deserializer;
 
         [ObservableProperty]
         private int _progressMax = 100;
@@ -45,6 +46,7 @@ namespace Minecraft_updater.ViewModels
             _appPath = AppContext.BaseDirectory;
             var configPath = Path.Combine(_appPath, "config.ini");
             _ini = new IniFile(configPath);
+            _deserializer = new PackDeserializerService();
 
             _url = _ini.IniReadValue("Minecraft_updater", "scUrl");
             _autoCloseAfterFinished =
@@ -115,8 +117,8 @@ namespace Minecraft_updater.ViewModels
 
         private async Task CheckPackAsync()
         {
-            var list = new List<Pack>();
-            string? minimumVersion = null;
+            List<Pack> list;
+            string? minimumVersion;
 
             // 下載清單
             var tempFile = PrivateFunction.CreateTmpFile();
@@ -133,26 +135,12 @@ namespace Minecraft_updater.ViewModels
 
                 // 解析清單
                 AddLog("解析中...");
-                using var reader = new StreamReader(tempFile, Encoding.UTF8);
-                while (!reader.EndOfStream)
-                {
-                    var line = await reader.ReadLineAsync();
-                    if (!string.IsNullOrWhiteSpace(line))
-                    {
-                        // 嘗試解析最低版本號（只在第一次遇到時設定）
-                        if (minimumVersion == null)
-                        {
-                            var parsedVersion = Packs.TryParseMinimumVersion(line);
-                            if (parsedVersion != null)
-                            {
-                                minimumVersion = parsedVersion;
-                                AddLog($"檔案要求最低版本: {minimumVersion}");
-                                continue; // 跳過此行，不解析為 Pack
-                            }
-                        }
+                var fileContent = await File.ReadAllTextAsync(tempFile, Encoding.UTF8);
+                (list, minimumVersion) = _deserializer.DeserializeFile(fileContent);
 
-                        list.Add(Packs.Resolve(line, minimumVersion));
-                    }
+                if (minimumVersion != null)
+                {
+                    AddLog($"檔案要求最低版本: {minimumVersion}");
                 }
 
                 // 檢查版本號是否符合要求

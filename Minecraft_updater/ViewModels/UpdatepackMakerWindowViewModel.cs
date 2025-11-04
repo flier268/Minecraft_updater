@@ -5,7 +5,6 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
-using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Avalonia.Platform.Storage;
@@ -22,6 +21,8 @@ namespace Minecraft_updater.ViewModels
         private readonly IniFile _ini;
         private readonly string _appPath;
         private readonly char[] _delimiter = { '+', '-', '_' };
+        private readonly PackSerializerService _serializer;
+        private readonly PackDeserializerService _deserializer;
 
         [ObservableProperty]
         private string _baseUrl = "http://aaa.bb.com/";
@@ -49,6 +50,8 @@ namespace Minecraft_updater.ViewModels
             _appPath = AppContext.BaseDirectory;
             var configPath = Path.Combine(_appPath, "config.ini");
             _ini = new IniFile(configPath);
+            _serializer = new PackSerializerService();
+            _deserializer = new PackDeserializerService();
 
             // 載入設定
             var savedUrl = _ini.IniReadValue("Minecraft_updater", "updatepackMaker_BaseURL");
@@ -198,7 +201,16 @@ namespace Minecraft_updater.ViewModels
             switch (targetListIndex)
             {
                 case 0: // 同步清單
-                    sb1.AppendLine($"{name}||{md5}||{url}");
+                    var syncPack = new Pack
+                    {
+                        Path = name,
+                        MD5 = md5,
+                        URL = url,
+                        Delete = false,
+                        DownloadWhenNotExist = false,
+                    };
+                    sb1.AppendLine(_serializer.SerializeLine(syncPack));
+
                     if (
                         (AddModToDelete && name.Contains("mod"))
                         || (AddConfigToDelete && name.Contains("config"))
@@ -208,7 +220,14 @@ namespace Minecraft_updater.ViewModels
                             0,
                             delimiterIndex == -1 ? name.Length : delimiterIndex
                         );
-                        sb2.AppendLine($"#{deleteName}||{md5}||");
+                        var deletePack = new Pack
+                        {
+                            Path = deleteName,
+                            MD5 = md5,
+                            URL = "",
+                            Delete = true,
+                        };
+                        sb2.AppendLine(_serializer.SerializeLine(deletePack));
                     }
                     break;
 
@@ -217,7 +236,14 @@ namespace Minecraft_updater.ViewModels
                         0,
                         delimiterIndex == -1 ? name.Length : delimiterIndex
                     );
-                    sb2.AppendLine($"#{deleteNameDirect}||{md5}||");
+                    var deletePackDirect = new Pack
+                    {
+                        Path = deleteNameDirect,
+                        MD5 = md5,
+                        URL = "",
+                        Delete = true,
+                    };
+                    sb2.AppendLine(_serializer.SerializeLine(deletePackDirect));
                     break;
 
                 case 2: // 不存在則添加清單
@@ -225,7 +251,14 @@ namespace Minecraft_updater.ViewModels
                         0,
                         delimiterIndex == -1 ? name.Length : delimiterIndex
                     );
-                    sb3.AppendLine($":{downloadName}||{md5}||{url}");
+                    var downloadPack = new Pack
+                    {
+                        Path = downloadName,
+                        MD5 = md5,
+                        URL = url,
+                        DownloadWhenNotExist = true,
+                    };
+                    sb3.AppendLine(_serializer.SerializeLine(downloadPack));
                     break;
             }
         }
@@ -259,58 +292,39 @@ namespace Minecraft_updater.ViewModels
         {
             try
             {
-                var regex = new Regex("(.*?)\\|\\|(.*?)\\|\\|(.*)", RegexOptions.Singleline);
+                var content = await File.ReadAllTextAsync(filePath);
+                var (packs, minimumVersion) = _deserializer.DeserializeFile(content);
+
                 var sb1 = new StringBuilder();
                 var sb2 = new StringBuilder();
                 var sb3 = new StringBuilder();
                 string? detectedBaseUrl = null;
 
-                using var reader = new StreamReader(filePath);
-                while (!reader.EndOfStream)
+                // 根據 Pack 的屬性分類到不同的清單
+                foreach (var pack in packs)
                 {
-                    var line = await reader.ReadLineAsync();
-                    if (string.IsNullOrWhiteSpace(line))
-                        continue;
+                    var serializedLine = _serializer.SerializeLine(pack);
 
-                    // 跳過最低版本號行（載入時不需要處理，儲存時會自動加入當前版本）
-                    if (Packs.TryParseMinimumVersion(line) != null)
+                    if (pack.Delete)
                     {
-                        continue;
+                        sb2.AppendLine(serializedLine);
                     }
-
-                    if (line.StartsWith("#"))
+                    else if (pack.DownloadWhenNotExist)
                     {
-                        sb2.AppendLine(line);
-                    }
-                    else if (line.StartsWith(":"))
-                    {
-                        sb3.AppendLine(line);
+                        sb3.AppendLine(serializedLine);
                         // 嘗試從不存在則添加清單中偵測 BaseUrl
-                        if (detectedBaseUrl == null)
+                        if (detectedBaseUrl == null && !string.IsNullOrEmpty(pack.URL))
                         {
-                            var match = regex.Match(line);
-                            if (match.Success && match.Groups.Count > 3)
-                            {
-                                var url = match.Groups[3].Value;
-                                detectedBaseUrl = TryExtractBaseUrl(
-                                    url,
-                                    match.Groups[1].Value.TrimStart(':')
-                                );
-                            }
+                            detectedBaseUrl = TryExtractBaseUrl(pack.URL, pack.Path);
                         }
                     }
                     else
                     {
-                        var match = regex.Match(line);
-                        if (match.Success)
+                        sb1.AppendLine(serializedLine);
+                        // 嘗試從同步清單中偵測 BaseUrl
+                        if (detectedBaseUrl == null && !string.IsNullOrEmpty(pack.URL))
                         {
-                            sb1.AppendLine(line);
-                            // 嘗試從同步清單中偵測 BaseUrl
-                            if (detectedBaseUrl == null && match.Groups.Count > 3)
-                            {
-                                var url = match.Groups[3].Value;
-                                detectedBaseUrl = TryExtractBaseUrl(url, match.Groups[1].Value);
-                            }
+                            detectedBaseUrl = TryExtractBaseUrl(pack.URL, pack.Path);
                         }
                     }
                 }
@@ -367,19 +381,36 @@ namespace Minecraft_updater.ViewModels
 
         public string GetSaveContent()
         {
-            var sb = new StringBuilder();
+            // 解析所有三個清單中的 Pack
+            var allPacks = new List<Pack>();
 
-            // 自動加入當前程式版本號作為最低版本號
-            // 使用三個分隔符 (MinVersion||x.x.x.x||) 格式以確保向後兼容
-            // 舊版本在解析時會將其視為檔案路徑 "MinVersion"，但因為檔案不存在而被忽略
+            // 解析同步清單
+            if (!string.IsNullOrWhiteSpace(SyncListText))
+            {
+                var (syncPacks, _) = _deserializer.DeserializeFile(SyncListText);
+                allPacks.AddRange(syncPacks);
+            }
+
+            // 解析刪除清單
+            if (!string.IsNullOrWhiteSpace(DeleteListText))
+            {
+                var (deletePacks, _) = _deserializer.DeserializeFile(DeleteListText);
+                allPacks.AddRange(deletePacks);
+            }
+
+            // 解析不存在則添加清單
+            if (!string.IsNullOrWhiteSpace(DownloadWhenNotExistText))
+            {
+                var (downloadPacks, _) = _deserializer.DeserializeFile(DownloadWhenNotExistText);
+                allPacks.AddRange(downloadPacks);
+            }
+
+            // 取得當前版本號
             var currentVersion =
                 Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "1.0.1.0";
-            sb.AppendLine($"MinVersion||{currentVersion}||");
 
-            sb.Append(SyncListText);
-            sb.Append(DeleteListText);
-            sb.Append(DownloadWhenNotExistText);
-            return sb.ToString();
+            // 使用序列化服務生成完整檔案
+            return _serializer.SerializeFile(allPacks, currentVersion);
         }
     }
 }

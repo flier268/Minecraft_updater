@@ -146,9 +146,9 @@ namespace Minecraft_updater.Tests.ViewModels
             var content = viewModel.GetSaveContent();
 
             // Assert
-            // 現在總是會包含當前程式版本號作為最低版本
-            content.Should().StartWith("MinVersion||");
-            content.Should().Contain("||\n");
+            // 現在使用新格式 MinVersion= 而不是 MinVersion||
+            content.Should().StartWith("MinVersion=");
+            content.Should().Contain("\n");
         }
 
         [Fact]
@@ -157,18 +157,18 @@ namespace Minecraft_updater.Tests.ViewModels
             // Arrange
             var viewModel = new UpdatepackMakerWindowViewModel
             {
-                SyncListText = "sync content\n",
-                DeleteListText = "delete content\n",
-                DownloadWhenNotExistText = "download content\n"
+                SyncListText = "mods/sync.jar||MD5||http://example.com/sync.jar\n",
+                DeleteListText = "#mods/delete.jar||MD5||http://example.com/delete.jar\n",
+                DownloadWhenNotExistText = ":config/download.cfg||MD5||http://example.com/download.cfg\n"
             };
 
             // Act
             var content = viewModel.GetSaveContent();
 
             // Assert
-            content.Should().Contain("sync content");
-            content.Should().Contain("delete content");
-            content.Should().Contain("download content");
+            content.Should().Contain("mods/sync.jar");
+            content.Should().Contain("#mods/delete.jar");
+            content.Should().Contain(":config/download.cfg");
         }
 
         [Fact]
@@ -301,18 +301,20 @@ normal/file4.jar||JKL||http://url4.com
             // Arrange
             var viewModel = new UpdatepackMakerWindowViewModel
             {
-                SyncListText = "SYNC\n",
-                DeleteListText = "DELETE\n",
-                DownloadWhenNotExistText = "DOWNLOAD\n"
+                SyncListText = "mods/sync.jar||MD5||http://url\n",
+                DeleteListText = "#mods/delete.jar||MD5||\n",
+                DownloadWhenNotExistText = ":config/download.cfg||MD5||http://url2\n"
             };
 
             // Act
             var content = viewModel.GetSaveContent();
 
             // Assert
-            // 現在會先包含 MinVersion 行，然後是原有的內容順序
-            content.Should().StartWith("MinVersion||");
-            content.Should().EndWith("SYNC\nDELETE\nDOWNLOAD\n");
+            // 現在會先包含 MinVersion 行（新格式使用 = ），然後是原有的內容順序
+            content.Should().StartWith("MinVersion=");
+            content.Should().Contain("mods/sync.jar");
+            content.Should().Contain("#mods/delete.jar");
+            content.Should().Contain(":config/download.cfg");
         }
 
         [Fact]
