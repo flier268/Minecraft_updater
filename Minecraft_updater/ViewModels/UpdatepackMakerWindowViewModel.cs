@@ -23,6 +23,7 @@ namespace Minecraft_updater.ViewModels
         private readonly char[] _delimiter = { '+', '-', '_' };
         private readonly PackSerializerService _serializer;
         private readonly PackDeserializerService _deserializer;
+        private bool _isInitializingAuth;
 
         [ObservableProperty]
         private string _baseUrl = "http://aaa.bb.com/";
@@ -44,6 +45,40 @@ namespace Minecraft_updater.ViewModels
 
         [ObservableProperty]
         private string _downloadWhenNotExistText = string.Empty;
+
+        public IReadOnlyList<DownloadAuthenticationMode> AuthenticationModes { get; } =
+            Enum.GetValues<DownloadAuthenticationMode>();
+
+        [ObservableProperty]
+        private DownloadAuthenticationMode _selectedAuthMode = DownloadAuthenticationMode.None;
+
+        [ObservableProperty]
+        private string _authUsername = string.Empty;
+
+        [ObservableProperty]
+        private string _authPassword = string.Empty;
+
+        [ObservableProperty]
+        private string _authBearerToken = string.Empty;
+
+        [ObservableProperty]
+        private string _authHeaderName = string.Empty;
+
+        [ObservableProperty]
+        private string _authHeaderValue = string.Empty;
+
+        [ObservableProperty]
+        private string _authQueryName = string.Empty;
+
+        [ObservableProperty]
+        private string _authQueryValue = string.Empty;
+
+        public bool ShowBasicFields => SelectedAuthMode == DownloadAuthenticationMode.Basic;
+        public bool ShowBearerTokenField =>
+            SelectedAuthMode == DownloadAuthenticationMode.BearerToken;
+        public bool ShowHeaderFields => SelectedAuthMode == DownloadAuthenticationMode.ApiKeyHeader;
+        public bool ShowQueryFields => SelectedAuthMode == DownloadAuthenticationMode.ApiKeyQuery;
+        public bool ShowAuthDetails => SelectedAuthMode != DownloadAuthenticationMode.None;
 
         public UpdatepackMakerWindowViewModel()
         {
@@ -67,6 +102,24 @@ namespace Minecraft_updater.ViewModels
             }
 
             Log.LogFile = _ini.IniReadValue("Minecraft_updater", "LogFile").ToLower() == "true";
+
+            _isInitializingAuth = true;
+            var authOptions = DownloadAuthenticationOptions.FromIni(_ini);
+            SelectedAuthMode = authOptions.Mode;
+            AuthUsername = authOptions.Username ?? string.Empty;
+            AuthPassword = authOptions.Password ?? string.Empty;
+            AuthBearerToken = authOptions.BearerToken ?? string.Empty;
+            AuthHeaderName = authOptions.HeaderName ?? string.Empty;
+            AuthHeaderValue = authOptions.HeaderValue ?? string.Empty;
+            AuthQueryName = authOptions.QueryParameterName ?? string.Empty;
+            AuthQueryValue = authOptions.QueryParameterValue ?? string.Empty;
+            _isInitializingAuth = false;
+
+            OnPropertyChanged(nameof(ShowBasicFields));
+            OnPropertyChanged(nameof(ShowBearerTokenField));
+            OnPropertyChanged(nameof(ShowHeaderFields));
+            OnPropertyChanged(nameof(ShowQueryFields));
+            OnPropertyChanged(nameof(ShowAuthDetails));
         }
 
         partial void OnBaseUrlChanged(string value)
@@ -411,6 +464,125 @@ namespace Minecraft_updater.ViewModels
 
             // 使用序列化服務生成完整檔案
             return _serializer.SerializeFile(allPacks, currentVersion);
+        }
+
+        partial void OnSelectedAuthModeChanged(DownloadAuthenticationMode value)
+        {
+            PersistAuthValue("DownloadAuthType", value.ToString());
+
+            switch (value)
+            {
+                case DownloadAuthenticationMode.None:
+                    ClearBasicCredentials();
+                    ClearBearerToken();
+                    ClearHeaderValues();
+                    ClearQueryValues();
+                    break;
+                case DownloadAuthenticationMode.Basic:
+                    ClearBearerToken();
+                    ClearHeaderValues();
+                    ClearQueryValues();
+                    break;
+                case DownloadAuthenticationMode.BearerToken:
+                    ClearBasicCredentials();
+                    ClearHeaderValues();
+                    ClearQueryValues();
+                    break;
+                case DownloadAuthenticationMode.ApiKeyHeader:
+                    ClearBasicCredentials();
+                    ClearBearerToken();
+                    ClearQueryValues();
+                    break;
+                case DownloadAuthenticationMode.ApiKeyQuery:
+                    ClearBasicCredentials();
+                    ClearBearerToken();
+                    ClearHeaderValues();
+                    break;
+            }
+
+            OnPropertyChanged(nameof(ShowBasicFields));
+            OnPropertyChanged(nameof(ShowBearerTokenField));
+            OnPropertyChanged(nameof(ShowHeaderFields));
+            OnPropertyChanged(nameof(ShowQueryFields));
+            OnPropertyChanged(nameof(ShowAuthDetails));
+        }
+
+        partial void OnAuthUsernameChanged(string value) =>
+            PersistAuthValue("DownloadAuthUsername", value);
+
+        partial void OnAuthPasswordChanged(string value) =>
+            PersistAuthValue("DownloadAuthPassword", value);
+
+        partial void OnAuthBearerTokenChanged(string value) =>
+            PersistAuthValue("DownloadAuthBearerToken", value);
+
+        partial void OnAuthHeaderNameChanged(string value) =>
+            PersistAuthValue("DownloadAuthHeaderName", value);
+
+        partial void OnAuthHeaderValueChanged(string value) =>
+            PersistAuthValue("DownloadAuthHeaderValue", value);
+
+        partial void OnAuthQueryNameChanged(string value) =>
+            PersistAuthValue("DownloadAuthQueryName", value);
+
+        partial void OnAuthQueryValueChanged(string value) =>
+            PersistAuthValue("DownloadAuthQueryValue", value);
+
+        private void PersistAuthValue(string key, string value)
+        {
+            if (_isInitializingAuth)
+            {
+                return;
+            }
+
+            _ini.IniWriteValue("Minecraft_updater", key, value ?? string.Empty);
+        }
+
+        private void ClearBasicCredentials()
+        {
+            if (!string.IsNullOrEmpty(AuthUsername))
+            {
+                AuthUsername = string.Empty;
+            }
+
+            if (!string.IsNullOrEmpty(AuthPassword))
+            {
+                AuthPassword = string.Empty;
+            }
+        }
+
+        private void ClearBearerToken()
+        {
+            if (!string.IsNullOrEmpty(AuthBearerToken))
+            {
+                AuthBearerToken = string.Empty;
+            }
+        }
+
+        private void ClearHeaderValues()
+        {
+            if (!string.IsNullOrEmpty(AuthHeaderName))
+            {
+                AuthHeaderName = string.Empty;
+            }
+
+            if (!string.IsNullOrEmpty(AuthHeaderValue))
+            {
+                AuthHeaderValue = string.Empty;
+            }
+        }
+
+        private void ClearQueryValues()
+        {
+            if (!string.IsNullOrEmpty(AuthQueryName))
+            {
+                AuthQueryName = string.Empty;
+            }
+
+            if (!string.IsNullOrEmpty(AuthQueryValue))
+            {
+                AuthQueryValue = string.Empty;
+            }
         }
     }
 }

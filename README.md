@@ -17,3 +17,21 @@ Features：<br />
 
 ## Installation  <br/>
 https://github.com/flier268/Minecraft_updater/wiki
+
+## Download Authentication
+Starting from v1.2 you can secure update pack downloads with common authentication schemes.
+
+- Open the **Pack Maker** (`UpdatepackMakerWindow`) and use the new “下載來源身份驗證” panel to pick one mode at a time (Basic, Bearer Token, API Key header, or API Key query). Only the fields for the selected mode stay active; switching modes clears credentials from the others automatically.
+- The app writes the chosen settings back to `config.ini`, so runtime downloads (pack list + file sync) reuse the same credentials.
+- Manual configuration is also possible by editing the following keys inside the `[Minecraft_updater]` block of `config.ini`:
+
+  ```ini
+  DownloadAuthType=None|Basic|BearerToken|ApiKeyHeader|ApiKeyQuery
+  DownloadAuthUsername=
+  DownloadAuthPassword=
+  DownloadAuthBearerToken=
+  DownloadAuthHeaderName=
+  DownloadAuthHeaderValue=
+  DownloadAuthQueryName=
+  DownloadAuthQueryValue=
+  ```

@@ -10,3 +10,14 @@ LogFile=true
 
 ; UpdatepackMaker 的基礎 URL
 updatepackMaker_BaseURL=http://aaa.bb.com/
+
+; 下載來源的身份驗證設定 (選填)
+; DownloadAuthType 支援: None, Basic, BearerToken, ApiKeyHeader, ApiKeyQuery
+DownloadAuthType=None
+DownloadAuthUsername=
+DownloadAuthPassword=
+DownloadAuthBearerToken=
+DownloadAuthHeaderName=
+DownloadAuthHeaderValue=
+DownloadAuthQueryName=
+DownloadAuthQueryValue=

@@ -61,6 +61,83 @@
                              Width="380"
                              Watermark="http://example.com/"/>
                 </StackPanel>
+
+                <!-- Authentication -->
+                <Border BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                        BorderThickness="1"
+                        Padding="10"
+                        Margin="0,0,0,10">
+                    <StackPanel Spacing="8">
+                        <TextBlock Text="下載來源身份驗證" FontWeight="Bold"/>
+
+                        <Grid ColumnDefinitions="120,*" ColumnSpacing="10">
+                            <TextBlock Text="驗證模式：" VerticalAlignment="Center"/>
+                            <ComboBox ItemsSource="{Binding AuthenticationModes}"
+                                      SelectedItem="{Binding SelectedAuthMode}"
+                                      Grid.Column="1"
+                                      MinWidth="200"/>
+                        </Grid>
+
+                        <StackPanel IsVisible="{Binding ShowBasicFields}" Spacing="6">
+                            <Grid ColumnDefinitions="120,*" ColumnSpacing="10">
+                                <TextBlock Text="使用者名稱：" VerticalAlignment="Center"/>
+                                <TextBox Grid.Column="1"
+                                         Text="{Binding AuthUsername, UpdateSourceTrigger=PropertyChanged}"
+                                         Watermark="帳號"/>
+                            </Grid>
+                            <Grid ColumnDefinitions="120,*" ColumnSpacing="10">
+                                <TextBlock Text="密碼：" VerticalAlignment="Center"/>
+                                <TextBox Grid.Column="1"
+                                         Text="{Binding AuthPassword, UpdateSourceTrigger=PropertyChanged}"
+                                         PasswordChar="*"
+                                         Watermark="密碼"/>
+                            </Grid>
+                        </StackPanel>
+
+                        <StackPanel IsVisible="{Binding ShowBearerTokenField}" Spacing="6">
+                            <Grid ColumnDefinitions="120,*" ColumnSpacing="10">
+                                <TextBlock Text="Bearer Token：" VerticalAlignment="Center"/>
+                                <TextBox Grid.Column="1"
+                                         Text="{Binding AuthBearerToken, UpdateSourceTrigger=PropertyChanged}"
+                                         Watermark="請輸入 Token"/>
+                            </Grid>
+                        </StackPanel>
+
+                        <StackPanel IsVisible="{Binding ShowHeaderFields}" Spacing="6">
+                            <Grid ColumnDefinitions="120,*" ColumnSpacing="10">
+                                <TextBlock Text="Header 名稱：" VerticalAlignment="Center"/>
+                                <TextBox Grid.Column="1"
+                                         Text="{Binding AuthHeaderName, UpdateSourceTrigger=PropertyChanged}"
+                                         Watermark="例如 X-API-Key"/>
+                            </Grid>
+                            <Grid ColumnDefinitions="120,*" ColumnSpacing="10">
+                                <TextBlock Text="Header 值：" VerticalAlignment="Center"/>
+                                <TextBox Grid.Column="1"
+                                         Text="{Binding AuthHeaderValue, UpdateSourceTrigger=PropertyChanged}"
+                                         Watermark="請輸入憑證值"/>
+                            </Grid>
+                        </StackPanel>
+
+                        <StackPanel IsVisible="{Binding ShowQueryFields}" Spacing="6">
+                            <Grid ColumnDefinitions="120,*" ColumnSpacing="10">
+                                <TextBlock Text="參數名稱：" VerticalAlignment="Center"/>
+                                <TextBox Grid.Column="1"
+                                         Text="{Binding AuthQueryName, UpdateSourceTrigger=PropertyChanged}"
+                                         Watermark="例如 token"/>
+                            </Grid>
+                            <Grid ColumnDefinitions="120,*" ColumnSpacing="10">
+                                <TextBlock Text="參數值：" VerticalAlignment="Center"/>
+                                <TextBox Grid.Column="1"
+                                         Text="{Binding AuthQueryValue, UpdateSourceTrigger=PropertyChanged}"
+                                         Watermark="請輸入參數值"/>
+                            </Grid>
+                        </StackPanel>
+
+                        <TextBlock Text="所有檔案下載都會套用此身份驗證設定"
+                                   Foreground="Gray"
+                                   IsVisible="{Binding ShowAuthDetails}"/>
+                    </StackPanel>
+                </Border>
             </StackPanel>
 
             <Border Grid.Column="1"

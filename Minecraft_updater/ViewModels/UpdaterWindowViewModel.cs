@@ -23,6 +23,7 @@ namespace Minecraft_updater.ViewModels
         private readonly string _url;
         private readonly bool _autoCloseAfterFinished;
         private readonly PackDeserializerService _deserializer;
+        private readonly DownloadAuthenticationOptions _downloadAuthOptions;
 
         [ObservableProperty]
         private int _progressMax = 100;
@@ -53,6 +54,7 @@ namespace Minecraft_updater.ViewModels
                 _ini.IniReadValue("Minecraft_updater", "AutoClose_AfterFinishd").ToLower()
                 == "true";
             Log.LogFile = _ini.IniReadValue("Minecraft_updater", "LogFile").ToLower() == "true";
+            _downloadAuthOptions = DownloadAuthenticationOptions.FromIni(_ini);
 
             var version =
                 Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "Unknown";
@@ -122,12 +124,21 @@ namespace Minecraft_updater.ViewModels
 
             // 下載清單
             var tempFile = PrivateFunction.CreateTmpFile();
-            AddLog($"從 {_url} 下載Minecraft的Mod清單...");
 
             try
             {
                 using var httpClient = new HttpClient();
-                var response = await httpClient.GetAsync(_url);
+                using var request = HttpAuthenticationHelper.CreateAuthenticatedGetRequest(
+                    _url,
+                    _downloadAuthOptions
+                );
+                var sanitizedUrl = HttpAuthenticationHelper.GetSanitizedUrlForLogging(
+                    request.RequestUri,
+                    _downloadAuthOptions
+                );
+                AddLog($"從 {sanitizedUrl} 下載Minecraft的Mod清單...");
+
+                var response = await httpClient.SendAsync(request);
                 response.EnsureSuccessStatusCode();
 
                 var content = await response.Content.ReadAsStringAsync();
@@ -280,7 +291,8 @@ namespace Minecraft_updater.ViewModels
                             item.URL,
                             filePath,
                             (msg) => AddLog(msg),
-                            item.SHA256
+                            item.SHA256,
+                            _downloadAuthOptions
                         );
 
                         if (success)
@@ -326,7 +338,8 @@ namespace Minecraft_updater.ViewModels
                             item.URL,
                             filePath,
                             (msg) => AddLog(msg),
-                            item.SHA256
+                            item.SHA256,
+                            _downloadAuthOptions
                         );
 
                         if (success)

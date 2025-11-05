@@ -4,6 +4,7 @@ using System.Net.Http;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
+using Minecraft_updater.Models;
 
 namespace Minecraft_updater.Services
 {
@@ -93,7 +94,8 @@ namespace Minecraft_updater.Services
             string url,
             string path,
             Action<string>? logAction = null,
-            string? expectedSha256 = null
+            string? expectedSha256 = null,
+            DownloadAuthenticationOptions? authenticationOptions = null
         )
         {
             using var httpClient = new HttpClient();
@@ -114,13 +116,20 @@ namespace Minecraft_updater.Services
                     $"{Path.GetFileName(path)}.{Guid.NewGuid():N}.tmp"
                 );
 
-                // 先解碼再重新編碼 URL
-                var decodedUrl = Uri.UnescapeDataString(url);
-                logAction?.Invoke($"🔗 URL 解碼結果: {decodedUrl}");
-                var uri = new Uri(decodedUrl);
+                using var request = HttpAuthenticationHelper.CreateAuthenticatedGetRequest(
+                    url,
+                    authenticationOptions
+                );
+                var sanitizedSource = HttpAuthenticationHelper.GetSanitizedUrlForLogging(
+                    request.RequestUri,
+                    authenticationOptions
+                );
+                logAction?.Invoke($"🔗 下載來源: {sanitizedSource}");
                 logAction?.Invoke("⬇️ 正在連線並取得檔案流...");
-                // response.EnsureSuccessStatusCode();
-                using var response = await httpClient.GetAsync(uri);
+                using var response = await httpClient.SendAsync(
+                    request,
+                    HttpCompletionOption.ResponseHeadersRead
+                );
                 response.EnsureSuccessStatusCode();
                 using var cloudefileStream = await response.Content.ReadAsStreamAsync();
                 logAction?.Invoke(
@@ -190,10 +199,13 @@ namespace Minecraft_updater.Services
             string url,
             string path,
             Action<string>? logAction = null,
-            string? expectedSha256 = null
+            string? expectedSha256 = null,
+            DownloadAuthenticationOptions? authenticationOptions = null
         )
         {
-            return DownloadFileAsync(url, path, logAction, expectedSha256).GetAwaiter().GetResult();
+            return DownloadFileAsync(url, path, logAction, expectedSha256, authenticationOptions)
+                .GetAwaiter()
+                .GetResult();
         }
         #endregion
     }
