@@ -83,7 +83,9 @@ namespace Minecraft_updater.ViewModels
         public UpdatepackMakerWindowViewModel()
         {
             _appPath = AppContext.BaseDirectory;
-            var configPath = Path.Combine(_appPath, "config.ini");
+            var configPath = !string.IsNullOrWhiteSpace(App.ConfigPath)
+                ? App.ConfigPath
+                : Path.Combine(_appPath, Services.ConfigurationPathResolver.DefaultFileName);
             _ini = new IniFile(configPath);
             _serializer = new PackSerializerService();
             _deserializer = new PackDeserializerService();

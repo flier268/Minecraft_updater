@@ -1,7 +1,7 @@
 # Repository Guidelines
 
 ## Project Structure & Module Organization
-- `Minecraft_updater/` holds the Avalonia client. MVVM pieces live under `Models/`, `Services/`, `ViewModels/`, and `Views/`, with shared assets in `Assets/` and the sample server configuration in `config.ini.example`.
+- `Minecraft_updater/` holds the Avalonia client. MVVM pieces live under `Models/`, `Services/`, `ViewModels/`, and `Views/`, with shared assets in `Assets/` and the sample server configuration in `Minecraft_updater.ini.example`.
 - `Minecraft_updater.Tests/` mirrors the runtime folders (including `Integration/`) and contains all xUnit suites.
 - `Minecraft_updater.sln` binds the projects together; build artifacts drop into each project's `bin/` and `obj/` directories.
 
@@ -33,5 +33,5 @@ The GitHub release workflow runs the same restore → build → test chain and p
 - For release candidates, reference the intended tag (e.g., `v1.2.0`) so automation can publish the correct artifacts once the tag is pushed.
 
 ## Release & Configuration Notes
-- Never commit real `config.ini` values; share sanitized examples via `config.ini.example`.
+- Never commit real `Minecraft_updater.ini` values; share sanitized examples via `Minecraft_updater.ini.example`.
 - Keep platform-specific secrets (API tokens, server credentials) in local user secrets or CI environment variables. Update `.github/workflows/release.yml` only when necessary to avoid breaking automated builds.

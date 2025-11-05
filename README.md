@@ -22,8 +22,8 @@ https://github.com/flier268/Minecraft_updater/wiki
 Starting from v1.2 you can secure update pack downloads with common authentication schemes.
 
 - Open the **Pack Maker** (`UpdatepackMakerWindow`) and use the new “下載來源身份驗證” panel to pick one mode at a time (Basic, Bearer Token, API Key header, or API Key query). Only the fields for the selected mode stay active; switching modes clears credentials from the others automatically.
-- The app writes the chosen settings back to `config.ini`, so runtime downloads (pack list + file sync) reuse the same credentials.
-- Manual configuration is also possible by editing the following keys inside the `[Minecraft_updater]` block of `config.ini`:
+- The app writes the chosen settings back to `Minecraft_updater.ini` (or the path specified with `--config`), so runtime downloads (pack list + file sync) reuse the same credentials.
+- Manual configuration is also possible by editing the following keys inside the `[Minecraft_updater]` block of `Minecraft_updater.ini`:
 
   ```ini
   DownloadAuthType=None|Basic|BearerToken|ApiKeyHeader|ApiKeyQuery
@@ -35,3 +35,8 @@ Starting from v1.2 you can secure update pack downloads with common authenticati
   DownloadAuthQueryName=
   DownloadAuthQueryValue=
   ```
+
+### Custom Configuration File
+
+- Default config file name is now `Minecraft_updater.ini`. If the new file is missing but an older `config.ini` with a valid `scUrl` is present, the app copies it forward automatically.
+- You can override the config path via `--config <path>` (or `-c <path>`) appended after the command, e.g. `Minecraft_updater.exe CheckUpdate --config /path/to/custom.ini`.
