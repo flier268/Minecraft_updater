@@ -1,0 +1,79 @@
+<Window
+    x:Class="Minecraft_updater.Views.AboutWindow"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:vm="using:Minecraft_updater.ViewModels"
+    Title="關於 Minecraft Updater"
+    Icon="/Assets/minecraft_updater.ico"
+    Width="420"
+    Height="280"
+    MinWidth="360"
+    MinHeight="240"
+    WindowStartupLocation="CenterOwner"
+    CanResize="False"
+    mc:Ignorable="d"
+    x:DataType="vm:AboutWindowViewModel">
+
+    <Design.DataContext>
+        <vm:AboutWindowViewModel />
+    </Design.DataContext>
+
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <TextBlock
+            Grid.Row="0"
+            FontSize="24"
+            FontWeight="Bold"
+            Text="{Binding ApplicationName}" />
+
+        <TextBlock
+            Grid.Row="1"
+            Margin="0,8,0,0"
+            FontSize="14"
+            Foreground="Gray"
+            Text="{Binding Description}" />
+
+        <TextBlock
+            Grid.Row="2"
+            Margin="0,16,0,0"
+            FontSize="14">
+            <Run Text="版本：" />
+            <Run Text="{Binding Version}" />
+        </TextBlock>
+
+        <Border
+            Grid.Row="3"
+            Margin="0,16,0,16"
+            Padding="12"
+            Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
+            BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+            BorderThickness="1">
+            <StackPanel Spacing="8">
+                <TextBlock Text="專案頁面：" />
+                <TextBlock
+                    Classes="LinkText"
+                    Text="{Binding GitHubUrl}"
+                    Cursor="Hand"
+                    PointerPressed="OnGitHubLinkPressed"
+                    Foreground="Blue"
+                    TextDecorations="Underline" />
+            </StackPanel>
+        </Border>
+
+        <Button
+            Grid.Row="4"
+            Width="100"
+            HorizontalAlignment="Center"
+            Content="關閉"
+            Click="OnCloseClicked" />
+    </Grid>
+</Window>

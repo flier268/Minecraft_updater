@@ -1,7 +1,7 @@
-using System.Diagnostics;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Minecraft_updater.Services;
 using Minecraft_updater.ViewModels;
 
 namespace Minecraft_updater.Views
@@ -41,19 +41,12 @@ namespace Minecraft_updater.Views
 
         private void OnUpdateInfoClicked(object? sender, PointerPressedEventArgs e)
         {
-            try
-            {
-                var psi = new ProcessStartInfo
-                {
-                    FileName = "https://github.com/flier268/Minecraft_updater/releases",
-                    UseShellExecute = true,
-                };
-                Process.Start(psi);
-            }
-            catch
-            {
-                // 忽略錯誤
-            }
+            LinkNavigator.OpenUrl("https://github.com/flier268/Minecraft_updater/releases");
+        }
+
+        private void OnGitHubProjectLinkClicked(object? sender, PointerPressedEventArgs e)
+        {
+            LinkNavigator.OpenUrl("https://github.com/flier268/Minecraft_updater");
         }
     }
 }

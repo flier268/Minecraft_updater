@@ -168,6 +168,12 @@ namespace Minecraft_updater.Views
             }
         }
 
+        private async void OnAboutClicked(object? sender, RoutedEventArgs e)
+        {
+            var aboutWindow = new AboutWindow();
+            await aboutWindow.ShowDialog(this);
+        }
+
         private int DetermineTargetList(object? source)
         {
             // 遍歷視覺樹找到對應的 FileListControl

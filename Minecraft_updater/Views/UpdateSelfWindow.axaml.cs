@@ -1,4 +1,6 @@
 using Avalonia.Controls;
+using Avalonia.Input;
+using Minecraft_updater.Services;
 using Minecraft_updater.ViewModels;
 
 namespace Minecraft_updater.Views
@@ -20,6 +22,11 @@ namespace Minecraft_updater.Views
             viewModel.UpdateCompleted += (s, e) => Close();
 
             Closing += (_, _) => viewModel.CommitPreferences();
+        }
+
+        private void OnGitHubLinkClicked(object? sender, PointerPressedEventArgs e)
+        {
+            LinkNavigator.OpenUrl("https://github.com/flier268/Minecraft_updater");
         }
     }
 }

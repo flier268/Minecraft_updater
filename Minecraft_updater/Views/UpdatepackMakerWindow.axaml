@@ -28,6 +28,7 @@
             <MenuItem Header="Files">
                 <MenuItem Click="OnLoadClick" Header="Load" />
             </MenuItem>
+            <MenuItem Header="About" Click="OnAboutClicked" />
         </Menu>
 
 
