@@ -1,5 +1,9 @@
 using System;
 using System.IO;
+using System.Net;
+using System.Net.Sockets;
+using System.Security.Cryptography;
+using System.Text;
 using System.Threading.Tasks;
 using Xunit;
 using FluentAssertions;
@@ -280,6 +284,49 @@ namespace Minecraft_updater.Tests.Services
         }
 
         [Fact]
+        public async Task DownloadFileAsync_WhenHashMatches_ShouldReplaceFile()
+        {
+            // Arrange
+            var targetPath = Path.Combine(_testDirectory, "hash-success.txt");
+            File.WriteAllText(targetPath, "Old content");
+            const string downloadContent = "New hashed content";
+            var expectedHash = ComputeSha256(downloadContent);
+            var (url, serverTask) = StartSingleUseHttpServer(downloadContent);
+
+            // Act
+            var result = await PrivateFunction.DownloadFileAsync(url, targetPath, null, expectedHash);
+            await serverTask;
+
+            // Assert
+            result.Should().BeTrue();
+            File.ReadAllText(targetPath).Should().Be(downloadContent);
+        }
+
+        [Fact]
+        public async Task DownloadFileAsync_WhenHashMismatch_ShouldKeepOriginalFile()
+        {
+            // Arrange
+            var targetPath = Path.Combine(_testDirectory, "hash-mismatch.txt");
+            const string originalContent = "Original file content";
+            File.WriteAllText(targetPath, originalContent);
+            const string downloadContent = "Downloaded but invalid";
+            var (url, serverTask) = StartSingleUseHttpServer(downloadContent);
+
+            // Act
+            var result = await PrivateFunction.DownloadFileAsync(
+                url,
+                targetPath,
+                null,
+                new string('0', 64)
+            );
+            await serverTask;
+
+            // Assert
+            result.Should().BeFalse();
+            File.ReadAllText(targetPath).Should().Be(originalContent);
+        }
+
+        [Fact]
         public async Task DownloadFileAsync_WithLogAction_ShouldInvokeCallback()
         {
             // Arrange
@@ -315,6 +362,59 @@ namespace Minecraft_updater.Tests.Services
 
             // Assert
             await act.Should().NotThrowAsync();
+        }
+
+        #endregion
+
+        #region Helpers
+
+        private static (string Url, Task ServerTask) StartSingleUseHttpServer(string responseContent)
+        {
+            var listener = new TcpListener(IPAddress.Loopback, 0);
+            listener.Start();
+            var port = ((IPEndPoint)listener.LocalEndpoint).Port;
+
+            var serverTask = Task.Run(async () =>
+            {
+                try
+                {
+                    using var client = await listener.AcceptTcpClientAsync();
+                    await using var stream = client.GetStream();
+                    using var reader = new StreamReader(stream, Encoding.ASCII, leaveOpen: true);
+
+                    while (!string.IsNullOrEmpty(await reader.ReadLineAsync()))
+                    {
+                    }
+
+                    var bodyBytes = Encoding.UTF8.GetBytes(responseContent);
+                    var header =
+                        $"HTTP/1.1 200 OK\r\nContent-Length: {bodyBytes.Length}\r\nContent-Type: text/plain\r\nConnection: close\r\n\r\n";
+                    var headerBytes = Encoding.ASCII.GetBytes(header);
+
+                    await stream.WriteAsync(headerBytes, 0, headerBytes.Length);
+                    await stream.WriteAsync(bodyBytes, 0, bodyBytes.Length);
+                    await stream.FlushAsync();
+                }
+                finally
+                {
+                    listener.Stop();
+                }
+            });
+
+            return ($"http://127.0.0.1:{port}/", serverTask);
+        }
+
+        private static string ComputeSha256(string content)
+        {
+            using var sha = SHA256.Create();
+            var hashBytes = sha.ComputeHash(Encoding.UTF8.GetBytes(content));
+            var sb = new StringBuilder(hashBytes.Length * 2);
+            foreach (var b in hashBytes)
+            {
+                sb.Append(b.ToString("x2"));
+            }
+
+            return sb.ToString();
         }
 
         #endregion

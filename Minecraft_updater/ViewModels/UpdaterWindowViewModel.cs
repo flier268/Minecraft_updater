@@ -279,7 +279,8 @@ namespace Minecraft_updater.ViewModels
                         var success = await PrivateFunction.DownloadFileAsync(
                             item.URL,
                             filePath,
-                            (msg) => AddLog(msg)
+                            (msg) => AddLog(msg),
+                            item.SHA256
                         );
 
                         if (success)
@@ -324,7 +325,8 @@ namespace Minecraft_updater.ViewModels
                         var success = await PrivateFunction.DownloadFileAsync(
                             item.URL,
                             filePath,
-                            (msg) => AddLog(msg)
+                            (msg) => AddLog(msg),
+                            item.SHA256
                         );
 
                         if (success)

@@ -92,7 +92,8 @@ namespace Minecraft_updater.Services
         public static async Task<bool> DownloadFileAsync(
             string url,
             string path,
-            Action<string>? logAction = null
+            Action<string>? logAction = null,
+            string? expectedSha256 = null
         )
         {
             using var httpClient = new HttpClient();
@@ -142,6 +143,21 @@ namespace Minecraft_updater.Services
                 fileStream.Close();
                 logAction?.Invoke("🎉 檔案下載並寫入完成！");
 
+                var expectedHash = expectedSha256?.Trim();
+                if (!string.IsNullOrEmpty(expectedHash))
+                {
+                    var actualHash = GetSHA256(tempFilePath);
+                    if (
+                        !string.Equals(actualHash, expectedHash, StringComparison.OrdinalIgnoreCase)
+                    )
+                    {
+                        logAction?.Invoke(
+                            $"⚠️ 檔案校驗失敗，預期 SHA256 {expectedHash}、實際 {actualHash}，已取消更新。"
+                        );
+                        return false;
+                    }
+                }
+
                 logAction?.Invoke("📁 將新檔案覆蓋原始檔案");
                 File.Move(tempFilePath, path, true);
                 tempFilePath = null;
@@ -172,9 +188,14 @@ namespace Minecraft_updater.Services
         /// <summary>
         /// 下載檔案 (同步版本，保持向後相容)
         /// </summary>
-        public static bool DownloadFile(string url, string path, Action<string>? logAction = null)
+        public static bool DownloadFile(
+            string url,
+            string path,
+            Action<string>? logAction = null,
+            string? expectedSha256 = null
+        )
         {
-            return DownloadFileAsync(url, path, logAction).GetAwaiter().GetResult();
+            return DownloadFileAsync(url, path, logAction, expectedSha256).GetAwaiter().GetResult();
         }
         #endregion
     }
