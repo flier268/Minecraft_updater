@@ -96,15 +96,24 @@ namespace Minecraft_updater.Services
         )
         {
             using var httpClient = new HttpClient();
+            string? tempFilePath = null;
             try
             {
                 logAction?.Invoke($"正在下載: {Path.GetFileName(path)}");
 
-                if (!Directory.Exists(Path.GetDirectoryName(path)))
-                    Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+                var directory = Path.GetDirectoryName(path);
+                if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
+                {
+                    Directory.CreateDirectory(directory);
+                }
 
-                if (File.Exists(path))
-                    File.Delete(path);
+                var tempDirectory = string.IsNullOrEmpty(directory)
+                    ? Directory.GetCurrentDirectory()
+                    : directory;
+                tempFilePath = Path.Combine(
+                    tempDirectory,
+                    $"{Path.GetFileName(path)}.{Guid.NewGuid():N}.tmp"
+                );
 
                 // 先解碼再重新編碼 URL
                 var decodedUrl = Uri.UnescapeDataString(url);
@@ -123,15 +132,19 @@ namespace Minecraft_updater.Services
                 logAction?.Invoke($"💾 正在寫入檔案到: {path}");
 
                 await using var fileStream = new FileStream(
-                    path,
+                    tempFilePath,
                     FileMode.Create,
                     FileAccess.Write,
                     FileShare.None
                 );
                 await cloudefileStream.CopyToAsync(fileStream);
-                fileStream.Flush();
+                await fileStream.FlushAsync();
                 fileStream.Close();
                 logAction?.Invoke("🎉 檔案下載並寫入完成！");
+
+                logAction?.Invoke("📁 將新檔案覆蓋原始檔案");
+                File.Move(tempFilePath, path, true);
+                tempFilePath = null;
 
                 return true;
             }
@@ -139,6 +152,20 @@ namespace Minecraft_updater.Services
             {
                 logAction?.Invoke($"出現以下錯誤: {Path.GetFileName(path)} - {e.Message}");
                 return false;
+            }
+            finally
+            {
+                if (!string.IsNullOrEmpty(tempFilePath) && File.Exists(tempFilePath))
+                {
+                    try
+                    {
+                        File.Delete(tempFilePath);
+                    }
+                    catch
+                    {
+                        // Ignore cleanup failures
+                    }
+                }
             }
         }
 

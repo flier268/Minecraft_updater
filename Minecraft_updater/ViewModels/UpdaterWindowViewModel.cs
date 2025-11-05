@@ -262,6 +262,40 @@ namespace Minecraft_updater.ViewModels
                     }
                 }
 
+                // 處理僅在缺少時下載的檔案
+                var downloadWhenMissingList = list.Where(x => !x.Delete && x.DownloadWhenNotExist)
+                    .ToList();
+
+                foreach (var item in downloadWhenMissingList)
+                {
+                    var filePath = Path.Combine(_appPath, item.Path);
+                    if (File.Exists(filePath))
+                    {
+                        AddLog($"{Path.GetFileName(item.Path)} 已存在，跳過下載");
+                    }
+                    else
+                    {
+                        AddLog($"{Path.GetFileName(item.Path)} 不存在，開始下載");
+                        var success = await PrivateFunction.DownloadFileAsync(
+                            item.URL,
+                            filePath,
+                            (msg) => AddLog(msg)
+                        );
+
+                        if (success)
+                        {
+                            AddLog($"{Path.GetFileName(item.Path)} 下載完成");
+                        }
+                        else
+                        {
+                            AddLog($"{Path.GetFileName(item.Path)} 下載失敗", "#FF0000");
+                        }
+                    }
+
+                    haveUpdate++;
+                    UpdateProgress(haveUpdate, totalCount);
+                }
+
                 // 新增/取代檔案
                 var updateList = list.Where(x => !x.Delete && !x.DownloadWhenNotExist).ToList();
                 foreach (var item in updateList)

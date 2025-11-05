@@ -260,25 +260,23 @@ namespace Minecraft_updater.Tests.Services
         }
 
         [Fact]
-        public async Task DownloadFileAsync_ExistingFile_ShouldDeleteOldFile()
+        public async Task DownloadFileAsync_ExistingFile_ShouldNotRemoveFileOnFailure()
         {
             // Arrange
             var targetPath = Path.Combine(_testDirectory, "existing.txt");
             File.WriteAllText(targetPath, "Old content");
-            var originalCreationTime = File.GetCreationTime(targetPath);
+            var originalContent = File.ReadAllText(targetPath);
 
-            // Wait a bit to ensure time difference
-            await Task.Delay(10);
+            // Act - Try to download (will fail but should keep old file)
+            var result = await PrivateFunction.DownloadFileAsync(
+                "http://invalid.url/file.txt",
+                targetPath
+            );
 
-            // Act - Try to download (will fail but should delete old file first)
-            await PrivateFunction.DownloadFileAsync("http://invalid.url/file.txt", targetPath);
-
-            // Assert - Old file should have been deleted (new attempt was made)
-            // Note: File might not exist if download failed, which is expected
-            if (File.Exists(targetPath))
-            {
-                File.GetCreationTime(targetPath).Should().NotBe(originalCreationTime);
-            }
+            // Assert - Download should fail but existing file must remain untouched
+            result.Should().BeFalse();
+            File.Exists(targetPath).Should().BeTrue();
+            File.ReadAllText(targetPath).Should().Be(originalContent);
         }
 
         [Fact]

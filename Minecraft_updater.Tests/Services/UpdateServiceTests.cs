@@ -76,7 +76,9 @@ namespace Minecraft_updater.Tests.Services
             {
                 result.NewstVersion.Should().NotBeNullOrEmpty();
                 // 版本號應該符合格式（例如：1.2.3 或 1.2.3.4）
-                result.NewstVersion.Should().MatchRegex(@"^\d+\.\d+(\.\d+)?(\.\d+)?$");
+                result.NewstVersion
+                    .Should()
+                    .MatchRegex(@"^\d+(\.\d+){1,3}([\-+].+)?$");
             }
         }
 
@@ -109,6 +111,51 @@ namespace Minecraft_updater.Tests.Services
                 // Message 可能為空或包含 Release Notes
                 result.Message.Should().NotBeNull();
             }
+        }
+
+        #endregion
+
+        #region TryParseReleaseVersion 測試
+
+        [Theory]
+        [InlineData("v1.2.3", "1.2.3", "1.2.3")]
+        [InlineData("1.2.3", "1.2.3", "1.2.3")]
+        [InlineData("v1.2.3-beta", "1.2.3-beta", "1.2.3")]
+        [InlineData("1.2.3+build.1", "1.2.3+build.1", "1.2.3")]
+        [InlineData("v2.0", "2.0", "2.0")]
+        public void TryParseReleaseVersion_ShouldHandleCommonTags(
+            string tag,
+            string expectedDisplay,
+            string comparableVersion
+        )
+        {
+            // Act
+            var parsed = UpdateService.TryParseReleaseVersion(
+                tag,
+                out var version,
+                out var display
+            );
+
+            // Assert
+            parsed.Should().BeTrue();
+            display.Should().Be(expectedDisplay);
+            version.Should().Be(new Version(comparableVersion));
+        }
+
+        [Fact]
+        public void TryParseReleaseVersion_ShouldReturnFalseForInvalidTag()
+        {
+            // Act
+            var parsed = UpdateService.TryParseReleaseVersion(
+                "invalid-tag",
+                out var version,
+                out var display
+            );
+
+            // Assert
+            parsed.Should().BeFalse();
+            display.Should().BeEmpty();
+            version.Should().BeNull();
         }
 
         #endregion
