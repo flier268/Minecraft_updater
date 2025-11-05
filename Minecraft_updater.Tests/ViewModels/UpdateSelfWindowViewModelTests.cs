@@ -3,6 +3,7 @@ using System.IO;
 using Xunit;
 using FluentAssertions;
 using Minecraft_updater.Models;
+using Minecraft_updater.Services;
 using Minecraft_updater.ViewModels;
 
 namespace Minecraft_updater.Tests.ViewModels
@@ -32,6 +33,22 @@ namespace Minecraft_updater.Tests.ViewModels
             }
         }
 
+        private UpdateSelfWindowViewModel CreateViewModel(
+            UpdateMessage updateMessage,
+            bool force = false
+        )
+        {
+            var iniPath = Path.Combine(_testDirectory, "preferences.ini");
+            if (!File.Exists(iniPath))
+            {
+                File.WriteAllText(iniPath, "[Minecraft_updater]\n");
+            }
+
+            var ini = new IniFile(iniPath);
+            var preferences = new UpdatePreferencesService(ini);
+            return new UpdateSelfWindowViewModel(updateMessage, preferences, force);
+        }
+
         [Fact]
         public void Constructor_ShouldInitializeProperties()
         {
@@ -45,7 +62,7 @@ namespace Minecraft_updater.Tests.ViewModels
             };
 
             // Act
-            var viewModel = new UpdateSelfWindowViewModel(updateMessage);
+            var viewModel = CreateViewModel(updateMessage);
 
             // Assert
             viewModel.Should().NotBeNull();
@@ -69,7 +86,7 @@ namespace Minecraft_updater.Tests.ViewModels
             };
 
             // Act
-            var viewModel = new UpdateSelfWindowViewModel(updateMessage);
+            var viewModel = CreateViewModel(updateMessage);
 
             // Assert
             viewModel.NewVersion.Should().Be("");
@@ -86,7 +103,7 @@ namespace Minecraft_updater.Tests.ViewModels
             };
 
             // Act
-            var viewModel = new UpdateSelfWindowViewModel(updateMessage);
+            var viewModel = CreateViewModel(updateMessage);
 
             // Assert
             viewModel.CurrentVersion.Should().NotBeNullOrEmpty();
@@ -102,7 +119,7 @@ namespace Minecraft_updater.Tests.ViewModels
             };
 
             // Act
-            var viewModel = new UpdateSelfWindowViewModel(updateMessage);
+            var viewModel = CreateViewModel(updateMessage);
 
             // Assert
             viewModel.NewVersion.Should().Be("3.5.7");
@@ -118,7 +135,7 @@ namespace Minecraft_updater.Tests.ViewModels
             };
 
             // Act
-            var viewModel = new UpdateSelfWindowViewModel(updateMessage);
+            var viewModel = CreateViewModel(updateMessage);
 
             // Assert
             viewModel.Message.Should().Be("This is a test update message");
@@ -131,7 +148,7 @@ namespace Minecraft_updater.Tests.ViewModels
             var updateMessage = new UpdateMessage();
 
             // Act
-            var viewModel = new UpdateSelfWindowViewModel(updateMessage);
+            var viewModel = CreateViewModel(updateMessage);
 
             // Assert
             viewModel.UpdateButtonText.Should().Be("更新");
@@ -144,7 +161,7 @@ namespace Minecraft_updater.Tests.ViewModels
             var updateMessage = new UpdateMessage();
 
             // Act
-            var viewModel = new UpdateSelfWindowViewModel(updateMessage);
+            var viewModel = CreateViewModel(updateMessage);
 
             // Assert
             viewModel.IsUpdateEnabled.Should().BeTrue();
@@ -155,7 +172,7 @@ namespace Minecraft_updater.Tests.ViewModels
         {
             // Arrange
             var updateMessage = new UpdateMessage();
-            var viewModel = new UpdateSelfWindowViewModel(updateMessage);
+            var viewModel = CreateViewModel(updateMessage);
             var eventRaised = false;
 
             viewModel.UpdateCancelled += (sender, args) => eventRaised = true;
@@ -172,7 +189,7 @@ namespace Minecraft_updater.Tests.ViewModels
         {
             // Arrange
             var updateMessage = new UpdateMessage();
-            var viewModel = new UpdateSelfWindowViewModel(updateMessage);
+            var viewModel = CreateViewModel(updateMessage);
 
             // Act
             viewModel.UpdateButtonText = "下載中...";
@@ -186,7 +203,7 @@ namespace Minecraft_updater.Tests.ViewModels
         {
             // Arrange
             var updateMessage = new UpdateMessage();
-            var viewModel = new UpdateSelfWindowViewModel(updateMessage);
+            var viewModel = CreateViewModel(updateMessage);
 
             // Act
             viewModel.IsUpdateEnabled = false;
@@ -200,7 +217,7 @@ namespace Minecraft_updater.Tests.ViewModels
         {
             // Arrange
             var updateMessage = new UpdateMessage();
-            var viewModel = new UpdateSelfWindowViewModel(updateMessage);
+            var viewModel = CreateViewModel(updateMessage);
 
             // Act
             viewModel.Message = "Updated message";
@@ -220,7 +237,7 @@ namespace Minecraft_updater.Tests.ViewModels
             };
 
             // Act
-            var viewModel = new UpdateSelfWindowViewModel(updateMessage);
+            var viewModel = CreateViewModel(updateMessage);
 
             // Assert
             viewModel.Message.Should().Be("新版本已發布，包含錯誤修正和新功能");
@@ -236,7 +253,7 @@ namespace Minecraft_updater.Tests.ViewModels
             };
 
             // Act
-            var viewModel = new UpdateSelfWindowViewModel(updateMessage);
+            var viewModel = CreateViewModel(updateMessage);
 
             // Assert
             viewModel.NewVersion.Should().Be("10.20.30.40");
@@ -247,7 +264,7 @@ namespace Minecraft_updater.Tests.ViewModels
         {
             // Arrange
             var updateMessage = new UpdateMessage();
-            var viewModel = new UpdateSelfWindowViewModel(updateMessage);
+            var viewModel = CreateViewModel(updateMessage);
             var count = 0;
 
             viewModel.UpdateCancelled += (sender, args) => count++;
@@ -270,7 +287,7 @@ namespace Minecraft_updater.Tests.ViewModels
             };
 
             // Act
-            var viewModel = new UpdateSelfWindowViewModel(updateMessage);
+            var viewModel = CreateViewModel(updateMessage);
 
             // Assert
             viewModel.Message.Should().Be("Update <v2.0> available! @#$%");

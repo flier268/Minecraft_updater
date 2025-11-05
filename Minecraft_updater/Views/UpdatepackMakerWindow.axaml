@@ -23,6 +23,7 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="*"/>
@@ -36,8 +37,34 @@
             </MenuItem>
         </Menu>
 
-        <!-- Base Path 和 Base URL 輸入 -->
         <Grid Grid.Row="1" Margin="0,0,0,10">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <TextBlock VerticalAlignment="Center">
+                <Run Text="版本：" />
+                <Run Text="{Binding ApplicationVersion}"/>
+            </TextBlock>
+
+            <Button Grid.Column="1"
+                    Content="手動檢查更新"
+                    Command="{Binding ManualCheckUpdateCommand}"
+                    IsEnabled="{Binding IsManualCheckEnabled}"
+                    Margin="10,0,0,0"
+                    Padding="12,6"/>
+
+            <CheckBox Grid.Column="2"
+                      Content="停用自動更新"
+                      IsChecked="{Binding IsSelfUpdateDisabled}"
+                      Margin="10,0,0,0"
+                      VerticalAlignment="Center"/>
+        </Grid>
+
+        <!-- Base Path 和 Base URL 輸入 -->
+        <Grid Grid.Row="2" Margin="0,0,0,10">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
@@ -156,11 +183,11 @@
             </Border>
         </Grid>
 
-        <TextBlock Grid.Row="2" Text="提示：將檔案或資料夾拖曳到下方的文字框中"
+        <TextBlock Grid.Row="3" Text="提示：將檔案或資料夾拖曳到下方的文字框中"
                    Foreground="Gray" Margin="0,0,0,5"/>
 
         <!-- 同步清單 -->
-        <views:FileListControl Grid.Row="3"
+        <views:FileListControl Grid.Row="4"
                                x:Name="SyncListControl"
                                Title="同步清單"
                                ListText="{Binding SyncListText}"
@@ -168,7 +195,7 @@
                                ListIndex="0"/>
 
         <!-- 刪除清單 -->
-        <views:FileListControl Grid.Row="4"
+        <views:FileListControl Grid.Row="5"
                                x:Name="DeleteListControl"
                                Title="刪除清單"
                                ListText="{Binding DeleteListText}"
@@ -176,7 +203,7 @@
                                ListIndex="1"/>
 
         <!-- 不存在則添加清單 -->
-        <views:FileListControl Grid.Row="5"
+        <views:FileListControl Grid.Row="6"
                                x:Name="DownloadWhenNotExistListControl"
                                Title="不存在則添加清單"
                                ListText="{Binding DownloadWhenNotExistText}"
@@ -184,7 +211,7 @@
                                ListIndex="2"/>
 
         <!-- 儲存按鈕 -->
-        <Button Grid.Row="6"
+        <Button Grid.Row="7"
                 Content="儲存"
                 HorizontalAlignment="Center"
                 Padding="20,8"

@@ -40,3 +40,9 @@ Starting from v1.2 you can secure update pack downloads with common authenticati
 
 - Default config file name is now `Minecraft_updater.ini`. If the new file is missing but an older `config.ini` with a valid `scUrl` is present, the app copies it forward automatically.
 - You can override the config path via `--config <path>` (or `-c <path>`) appended after the command, e.g. `Minecraft_updater.exe CheckUpdate --config /path/to/custom.ini`.
+
+### Self Update Controls
+
+- Both the updater and pack maker windows display the current app version along with a `手動檢查更新` button so you can fetch the latest release on demand.
+- Use the `停用自動更新` checkbox to toggle whether startup performs an update check. The setting is stored in `Minecraft_updater.ini` (`DisableSelfUpdate=true/false`).
+- When a new version is detected, the dialog now includes options to skip just that release (`跳過此版本`, persisted as `SkippedVersion`) or to disable future checks from there. You can revisit the toggles later to re-enable checks.

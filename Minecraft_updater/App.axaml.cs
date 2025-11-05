@@ -12,6 +12,7 @@ using Avalonia.Data.Core.Plugins;
 using Avalonia.Markup.Xaml;
 using Avalonia.Threading;
 using Minecraft_updater.Models;
+using Minecraft_updater.Services;
 using Minecraft_updater.ViewModels;
 using Minecraft_updater.Views;
 using MsBox.Avalonia;
@@ -61,15 +62,37 @@ public partial class App : Application
                 {
                     // 檢查更新器版本並自動更新
                     desktop.ShutdownMode = ShutdownMode.OnExplicitShutdown;
+                    var ini = new IniFile(ConfigPath);
+                    var preferences = new UpdatePreferencesService(ini);
                     Task.Run(async () =>
                     {
+                        if (preferences.IsSelfUpdateDisabled)
+                        {
+                            desktop.Shutdown();
+                            return;
+                        }
+
                         var updateMessage = await Services.UpdateService.CheckUpdateAsync();
                         if (updateMessage.HaveUpdate)
                         {
+                            var skippedVersion = preferences.SkippedVersion;
+                            if (
+                                !string.IsNullOrEmpty(skippedVersion)
+                                && string.Equals(
+                                    skippedVersion,
+                                    updateMessage.NewstVersion,
+                                    StringComparison.OrdinalIgnoreCase
+                                )
+                            )
+                            {
+                                desktop.Shutdown();
+                                return;
+                            }
+
                             await Dispatcher.UIThread.InvokeAsync(() =>
                             {
                                 var updateWindow = new Views.UpdateSelfWindow(
-                                    new UpdateSelfWindowViewModel(updateMessage)
+                                    new UpdateSelfWindowViewModel(updateMessage, preferences)
                                 );
                                 desktop.MainWindow = updateWindow;
                                 updateWindow.Show();

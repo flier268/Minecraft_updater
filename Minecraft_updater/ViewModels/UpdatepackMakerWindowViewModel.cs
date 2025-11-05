@@ -23,7 +23,9 @@ namespace Minecraft_updater.ViewModels
         private readonly char[] _delimiter = { '+', '-', '_' };
         private readonly PackSerializerService _serializer;
         private readonly PackDeserializerService _deserializer;
+        private readonly UpdatePreferencesService _updatePreferences;
         private bool _isInitializingAuth;
+        private bool _isInitializingPreferences = true;
 
         [ObservableProperty]
         private string _baseUrl = "http://aaa.bb.com/";
@@ -80,6 +82,15 @@ namespace Minecraft_updater.ViewModels
         public bool ShowQueryFields => SelectedAuthMode == DownloadAuthenticationMode.ApiKeyQuery;
         public bool ShowAuthDetails => SelectedAuthMode != DownloadAuthenticationMode.None;
 
+        [ObservableProperty]
+        private bool _isSelfUpdateDisabled;
+
+        [ObservableProperty]
+        private bool _isCheckingUpdates;
+
+        [ObservableProperty]
+        private string _applicationVersion = "Unknown";
+
         public UpdatepackMakerWindowViewModel()
         {
             _appPath = AppContext.BaseDirectory;
@@ -89,6 +100,7 @@ namespace Minecraft_updater.ViewModels
             _ini = new IniFile(configPath);
             _serializer = new PackSerializerService();
             _deserializer = new PackDeserializerService();
+            _updatePreferences = new UpdatePreferencesService(_ini);
 
             // 載入設定
             var savedUrl = _ini.IniReadValue("Minecraft_updater", "updatepackMaker_BaseURL");
@@ -104,6 +116,10 @@ namespace Minecraft_updater.ViewModels
             }
 
             Log.LogFile = _ini.IniReadValue("Minecraft_updater", "LogFile").ToLower() == "true";
+            IsSelfUpdateDisabled = _updatePreferences.IsSelfUpdateDisabled;
+            ApplicationVersion =
+                Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "Unknown";
+            _isInitializingPreferences = false;
 
             _isInitializingAuth = true;
             var authOptions = DownloadAuthenticationOptions.FromIni(_ini);
@@ -140,12 +156,31 @@ namespace Minecraft_updater.ViewModels
             await CheckSelfUpdateAsync();
         }
 
-        private async Task CheckSelfUpdateAsync()
+        [RelayCommand]
+        private async Task ManualCheckUpdateAsync() => await CheckSelfUpdateAsync(force: true);
+
+        private async Task CheckSelfUpdateAsync(bool force = false)
         {
-            Log.AddLine("檢查Minecraft updater是否有更新...");
+            if (IsCheckingUpdates)
+            {
+                Log.AddLine("更新檢查正在進行中，請稍候...");
+                return;
+            }
+
+            if (!force && IsSelfUpdateDisabled)
+            {
+                Log.AddLine("自動更新檢查已停用");
+                return;
+            }
+
+            Log.AddLine(
+                force ? "手動檢查Minecraft updater更新..." : "檢查Minecraft updater是否有更新..."
+            );
 
             try
             {
+                IsCheckingUpdates = true;
+
                 var filename = Environment.GetCommandLineArgs()[0] ?? "";
                 var tempFilename =
                     Path.GetFileNameWithoutExtension(filename)
@@ -159,10 +194,25 @@ namespace Minecraft_updater.ViewModels
                 var updateMessage = await UpdateService.CheckUpdateAsync();
                 if (updateMessage.HaveUpdate)
                 {
+                    var skippedVersion = _updatePreferences.SkippedVersion;
+                    if (
+                        !force
+                        && !string.IsNullOrEmpty(skippedVersion)
+                        && string.Equals(
+                            skippedVersion,
+                            updateMessage.NewstVersion,
+                            StringComparison.OrdinalIgnoreCase
+                        )
+                    )
+                    {
+                        Log.AddLine($"已設定略過版本 {updateMessage.NewstVersion}，此次不提示。");
+                        return;
+                    }
+
                     await Dispatcher.UIThread.InvokeAsync(async () =>
                     {
                         var updateWindow = new Views.UpdateSelfWindow(
-                            new UpdateSelfWindowViewModel(updateMessage)
+                            new UpdateSelfWindowViewModel(updateMessage, _updatePreferences, force)
                         );
                         if (
                             Avalonia.Application.Current?.ApplicationLifetime
@@ -171,13 +221,22 @@ namespace Minecraft_updater.ViewModels
                         )
                         {
                             await updateWindow.ShowDialog(desktop.MainWindow);
+                            IsSelfUpdateDisabled = _updatePreferences.IsSelfUpdateDisabled;
                         }
                     });
+                }
+                else if (force)
+                {
+                    Log.AddLine("已經是最新版本。");
                 }
             }
             catch (Exception ex)
             {
                 Log.AddLine($"檢查更新失敗: {ex.Message}");
+            }
+            finally
+            {
+                IsCheckingUpdates = false;
             }
         }
 
@@ -585,6 +644,22 @@ namespace Minecraft_updater.ViewModels
             {
                 AuthQueryValue = string.Empty;
             }
+        }
+
+        public bool IsManualCheckEnabled => !IsCheckingUpdates;
+
+        partial void OnIsCheckingUpdatesChanged(bool value) =>
+            OnPropertyChanged(nameof(IsManualCheckEnabled));
+
+        partial void OnIsSelfUpdateDisabledChanged(bool value)
+        {
+            if (_isInitializingPreferences)
+            {
+                return;
+            }
+
+            _updatePreferences.SetSelfUpdateDisabled(value);
+            Log.AddLine(value ? "已停用自動更新檢查。" : "已啟用自動更新檢查。");
         }
     }
 }

@@ -17,6 +17,9 @@ namespace Minecraft_updater.Views
 
             // 訂閱事件以關閉視窗
             viewModel.UpdateCancelled += (s, e) => Close();
+            viewModel.UpdateCompleted += (s, e) => Close();
+
+            Closing += (_, _) => viewModel.CommitPreferences();
         }
     }
 }

@@ -24,6 +24,7 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
         <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,10">
@@ -49,13 +50,20 @@
             </Border>
         </StackPanel>
 
-        <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Center" Spacing="10">
+        <StackPanel Grid.Row="3" Spacing="6">
+            <CheckBox Content="跳過此版本"
+                      IsChecked="{Binding SkipThisVersion}"/>
+            <CheckBox Content="停用自動更新檢查"
+                      IsChecked="{Binding DisableFutureUpdates}"/>
+        </StackPanel>
+
+        <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Center" Spacing="10">
             <Button Content="{Binding UpdateButtonText}"
                     Command="{Binding UpdateCommand}"
                     IsEnabled="{Binding IsUpdateEnabled}"
                     Padding="20,8"
                     MinWidth="80"/>
-            <Button Content="略過"
+            <Button Content="稍後提醒"
                     Command="{Binding CancelCommand}"
                     Padding="20,8"
                     MinWidth="80"/>

@@ -8,6 +8,10 @@ AutoClose_AfterFinishd=false
 ; 是否啟用日誌檔案 (true/false)
 LogFile=true
 
+; 自動更新設定
+DisableSelfUpdate=false
+SkippedVersion=
+
 ; UpdatepackMaker 的基礎 URL
 updatepackMaker_BaseURL=http://aaa.bb.com/
 
