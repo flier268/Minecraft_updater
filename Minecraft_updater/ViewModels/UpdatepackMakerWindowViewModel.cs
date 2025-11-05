@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -91,6 +92,9 @@ namespace Minecraft_updater.ViewModels
         [ObservableProperty]
         private string _applicationVersion = "Unknown";
 
+        [ObservableProperty]
+        private ObservableCollection<string> _logMessages = new();
+
         public UpdatepackMakerWindowViewModel()
         {
             _appPath = AppContext.BaseDirectory;
@@ -156,6 +160,15 @@ namespace Minecraft_updater.ViewModels
             await CheckSelfUpdateAsync();
         }
 
+        private void AddLog(string message, string? color = null)
+        {
+            Dispatcher.UIThread.Post(() =>
+            {
+                LogMessages.Add(message);
+                Log.AddLine(message);
+            });
+        }
+
         [RelayCommand]
         private async Task ManualCheckUpdateAsync() => await CheckSelfUpdateAsync(force: true);
 
@@ -163,17 +176,17 @@ namespace Minecraft_updater.ViewModels
         {
             if (IsCheckingUpdates)
             {
-                Log.AddLine("更新檢查正在進行中，請稍候...");
+                AddLog("更新檢查正在進行中，請稍候...");
                 return;
             }
 
             if (!force && IsSelfUpdateDisabled)
             {
-                Log.AddLine("自動更新檢查已停用");
+                AddLog("自動更新檢查已停用");
                 return;
             }
 
-            Log.AddLine(
+            AddLog(
                 force ? "手動檢查Minecraft updater更新..." : "檢查Minecraft updater是否有更新..."
             );
 
@@ -205,7 +218,7 @@ namespace Minecraft_updater.ViewModels
                         )
                     )
                     {
-                        Log.AddLine($"已設定略過版本 {updateMessage.NewstVersion}，此次不提示。");
+                        AddLog($"已設定略過版本 {updateMessage.NewstVersion}，此次不提示。");
                         return;
                     }
 
@@ -227,12 +240,12 @@ namespace Minecraft_updater.ViewModels
                 }
                 else if (force)
                 {
-                    Log.AddLine("已經是最新版本。");
+                    AddLog("已經是最新版本。");
                 }
             }
             catch (Exception ex)
             {
-                Log.AddLine($"檢查更新失敗: {ex.Message}");
+                AddLog($"檢查更新失敗: {ex.Message}");
             }
             finally
             {
@@ -275,7 +288,7 @@ namespace Minecraft_updater.ViewModels
                 )
                 {
                     // 檔案不在基礎目錄下
-                    Log.AddLine($"檔案 {path} 不在基礎目錄 {baseDirectory} 下，已跳過");
+                    AddLog($"檔案 {path} 不在基礎目錄 {baseDirectory} 下，已跳過");
                     continue;
                 }
 
@@ -451,7 +464,7 @@ namespace Minecraft_updater.ViewModels
                 if (!string.IsNullOrEmpty(detectedBaseUrl))
                 {
                     BaseUrl = detectedBaseUrl;
-                    Log.AddLine($"從 SC 檔案中偵測到 Base URL: {detectedBaseUrl}");
+                    AddLog($"從 SC 檔案中偵測到 Base URL: {detectedBaseUrl}");
                 }
 
                 // 嘗試從 SC 檔案所在目錄偵測 BasePath
@@ -459,12 +472,12 @@ namespace Minecraft_updater.ViewModels
                 if (!string.IsNullOrEmpty(scFileDirectory) && Directory.Exists(scFileDirectory))
                 {
                     BasePath = scFileDirectory;
-                    Log.AddLine($"將 Base Path 設定為 SC 檔案所在目錄: {scFileDirectory}");
+                    AddLog($"將 Base Path 設定為 SC 檔案所在目錄: {scFileDirectory}");
                 }
             }
             catch (Exception ex)
             {
-                Log.AddLine($"載入檔案失敗: {ex.Message}");
+                AddLog($"載入檔案失敗: {ex.Message}");
             }
         }
 
@@ -659,7 +672,7 @@ namespace Minecraft_updater.ViewModels
             }
 
             _updatePreferences.SetSelfUpdateDisabled(value);
-            Log.AddLine(value ? "已停用自動更新檢查。" : "已啟用自動更新檢查。");
+            AddLog(value ? "已停用自動更新檢查。" : "已啟用自動更新檢查。");
         }
     }
 }
