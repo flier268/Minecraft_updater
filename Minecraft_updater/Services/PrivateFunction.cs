@@ -132,9 +132,24 @@ namespace Minecraft_updater.Services
                 );
                 response.EnsureSuccessStatusCode();
                 using var cloudefileStream = await response.Content.ReadAsStreamAsync();
-                logAction?.Invoke(
-                    $"✅ 成功取得檔案流。檔案大小 (可能為估計): {cloudefileStream.Length} bytes"
-                );
+
+                string fileSizeMessage;
+                if (response.Content.Headers.ContentLength is long contentLength)
+                {
+                    fileSizeMessage =
+                        $"✅ 成功取得檔案流。檔案大小 (可能為估計): {contentLength} bytes";
+                }
+                else if (cloudefileStream.CanSeek)
+                {
+                    fileSizeMessage =
+                        $"✅ 成功取得檔案流。檔案大小 (可能為估計): {cloudefileStream.Length} bytes";
+                }
+                else
+                {
+                    fileSizeMessage = "✅ 成功取得檔案流。檔案大小: 未提供 (串流模式)";
+                }
+
+                logAction?.Invoke(fileSizeMessage);
 
                 // 4. 將流寫入檔案
                 logAction?.Invoke($"💾 正在寫入檔案到: {path}");
