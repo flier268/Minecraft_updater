@@ -108,9 +108,7 @@ namespace Minecraft_updater.Services
                     Directory.CreateDirectory(directory);
                 }
 
-                var tempDirectory = string.IsNullOrEmpty(directory)
-                    ? Directory.GetCurrentDirectory()
-                    : directory;
+                var tempDirectory = Path.GetTempPath();
                 tempFilePath = Path.Combine(
                     tempDirectory,
                     $"{Path.GetFileName(path)}.{Guid.NewGuid():N}.tmp"
