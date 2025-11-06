@@ -11,7 +11,7 @@ using Minecraft_updater.Models;
 
 namespace Minecraft_updater.Services
 {
-    public class UpdateService
+    public class CheckCheckUpdateService
     {
         private const string GitHubApiUrl =
             "https://api.github.com/repos/flier268/Minecraft_updater/releases/latest";
@@ -191,35 +191,6 @@ namespace Minecraft_updater.Services
         public static UpdateMessage CheckUpdate()
         {
             return CheckUpdateAsync().GetAwaiter().GetResult();
-        }
-
-        /// <summary>
-        /// 啟動自動更新程式
-        /// </summary>
-        public static void StartAutoUpdater()
-        {
-            try
-            {
-                var autoUpdaterPath = Path.Combine(AppContext.BaseDirectory, "AutoUpdater.exe");
-
-                if (File.Exists(autoUpdaterPath))
-                {
-                    var startInfo = new ProcessStartInfo(autoUpdaterPath)
-                    {
-                        WindowStyle = ProcessWindowStyle.Minimized,
-                        Arguments = "-CheckUpdateWithoutForm",
-                    };
-                    Process.Start(startInfo);
-                }
-                else
-                {
-                    Console.WriteLine("找不到 AutoUpdater.exe");
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"啟動自動更新程式失敗: {ex.Message}");
-            }
         }
 
         /// <summary>

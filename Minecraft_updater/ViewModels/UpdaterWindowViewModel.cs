@@ -121,18 +121,9 @@ namespace Minecraft_updater.ViewModels
             {
                 IsCheckingUpdates = true;
 
-                // 刪除舊的臨時檔案
-                var filename = Environment.GetCommandLineArgs()[0] ?? "";
-                var tempFilename =
-                    Path.GetFileNameWithoutExtension(filename)
-                    + ".temp"
-                    + Path.GetExtension(filename);
-                if (File.Exists(tempFilename))
-                {
-                    File.Delete(tempFilename);
-                }
+                UpdateSelfService.Cleanup();
 
-                var updateMessage = await UpdateService.CheckUpdateAsync();
+                var updateMessage = await CheckCheckUpdateService.CheckUpdateAsync();
                 if (updateMessage.HaveUpdate)
                 {
                     var skippedVersion = _updatePreferences.SkippedVersion;

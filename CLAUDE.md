@@ -101,7 +101,7 @@ The Pack model is a pure DTO in [Models/Pack.cs](Minecraft_updater/Models/Pack.c
   - `ValidatePath(string)` - Checks for path traversal attacks and absolute paths
   - `ValidatePack(Pack)` - Comprehensive Pack validation
 
-**UpdateService** ([Services/UpdateService.cs](Minecraft_updater/Services/UpdateService.cs)):
+**CheckUpdateService** ([Services/CheckUpdateService.cs](Minecraft_updater/Services/CheckUpdateService.cs)):
 - `CheckUpdateAsync()` - Checks for updater self-updates from GitHub Releases
 - Version comparison using `Version.CompareTo()`
 - Reads version info from GitHub API: `https://api.github.com/repos/flier268/Minecraft_updater/releases/latest`

@@ -28,7 +28,7 @@ The GitHub release workflow runs the same restore → build → test chain and p
 - Generate coverage when touching critical logic: `dotnet test --collect:"XPlat Code Coverage"` then run `reportgenerator` to produce the HTML summary under `TestResults/CoverageReport/`.
 
 ## Commit & Pull Request Guidelines
-- History mixes conventional commits such as `refactor:` and scoped messages like `test(UpdateService): ...`. Continue using lowercase types (`feat`, `fix`, `refactor`, `test`) with short, imperative descriptions.
+- History mixes conventional commits such as `refactor:` and scoped messages like `test(CheckUpdateService): ...`. Continue using lowercase types (`feat`, `fix`, `refactor`, `test`) with short, imperative descriptions.
 - Squash work-in-progress before review. Each PR should explain the change, link any tracked issue, list manual verification (screenshots for UI tweaks), and confirm tests (`dotnet test`) pass.
 - For release candidates, reference the intended tag (e.g., `v1.2.0`) so automation can publish the correct artifacts once the tag is pushed.
 
