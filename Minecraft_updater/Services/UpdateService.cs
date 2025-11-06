@@ -193,35 +193,6 @@ namespace Minecraft_updater.Services
             return CheckUpdateAsync().GetAwaiter().GetResult();
         }
 
-        /// <summary>
-        /// 啟動自動更新程式
-        /// </summary>
-        public static void StartAutoUpdater()
-        {
-            try
-            {
-                var autoUpdaterPath = Path.Combine(AppContext.BaseDirectory, "AutoUpdater.exe");
-
-                if (File.Exists(autoUpdaterPath))
-                {
-                    var startInfo = new ProcessStartInfo(autoUpdaterPath)
-                    {
-                        WindowStyle = ProcessWindowStyle.Minimized,
-                        Arguments = "-CheckUpdateWithoutForm",
-                    };
-                    Process.Start(startInfo);
-                }
-                else
-                {
-                    Console.WriteLine("找不到 AutoUpdater.exe");
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"啟動自動更新程式失敗: {ex.Message}");
-            }
-        }
-
         public static void Cleanup()
         {
             var filename = GetExecutingFilePath();

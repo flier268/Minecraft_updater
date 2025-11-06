@@ -396,44 +396,6 @@ namespace Minecraft_updater.Tests.Services
 
         #endregion
 
-        #region StartAutoUpdater 測試
-
-        [Fact]
-        public void StartAutoUpdater_NonExistentFile_ShouldNotThrow()
-        {
-            // Act
-            Action act = () => UpdateService.StartAutoUpdater();
-
-            // Assert - 即使 AutoUpdater.exe 不存在也不應該拋出異常
-            act.Should().NotThrow();
-        }
-
-        [Fact]
-        public void StartAutoUpdater_ShouldHandleGracefully()
-        {
-            // Arrange - 測試環境中沒有 AutoUpdater.exe
-
-            // Act & Assert - 不應該崩潰
-            Action act = () => UpdateService.StartAutoUpdater();
-            act.Should().NotThrow();
-        }
-
-        [Fact]
-        public void StartAutoUpdater_MultipleCallsShouldNotThrow()
-        {
-            // Act & Assert
-            Action act = () =>
-            {
-                UpdateService.StartAutoUpdater();
-                UpdateService.StartAutoUpdater();
-                UpdateService.StartAutoUpdater();
-            };
-
-            act.Should().NotThrow();
-        }
-
-        #endregion
-
         #region 整合測試
 
         [Fact]
