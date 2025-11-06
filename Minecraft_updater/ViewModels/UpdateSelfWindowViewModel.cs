@@ -86,7 +86,7 @@ namespace Minecraft_updater.ViewModels
                     throw new Exception("無法取得更新下載連結，請確認您的作業系統是否支援");
                 }
 
-                var filename = Environment.GetCommandLineArgs()[0];
+                var filename = UpdateService.GetExecutingFilePath();
                 if (string.IsNullOrEmpty(filename))
                 {
                     throw new Exception("無法取得執行檔路徑");
