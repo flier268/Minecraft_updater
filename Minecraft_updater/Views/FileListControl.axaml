@@ -6,12 +6,13 @@
              x:Class="Minecraft_updater.Views.FileListControl"
              x:Name="Root">
 
-    <StackPanel Margin="0,0,0,10">
+    <Grid RowDefinitions="Auto,*"
+          >
         <DockPanel>
             <TextBlock Text="{Binding #Root.Title}"
                        DockPanel.Dock="Left"
                        FontWeight="Bold"
-                       Margin="0,0,0,5"/>
+                       Margin="0,0,10,5"/>
             <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="5">
                 <Button Content="選取檔案"
                         Click="OnSelectFiles"
@@ -25,10 +26,10 @@
             </StackPanel>
         </DockPanel>
         <Border BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}"
-                BorderThickness="1"
+                BorderThickness="1" Grid.Row="1"
                 Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
-                Height="150">
-            <ScrollViewer VerticalScrollBarVisibility="Auto"
+               >
+            <ScrollViewer VerticalScrollBarVisibility="Auto" Height="{Binding $parent.Bounds.Height, Mode=OneWay}"
                           HorizontalScrollBarVisibility="Disabled">
                 <TextBox x:Name="ListTextBox"
                          Text="{Binding #Root.ListText}"
@@ -38,6 +39,6 @@
                          Background="Transparent"/>
             </ScrollViewer>
         </Border>
-    </StackPanel>
+    </Grid>
 
 </UserControl>

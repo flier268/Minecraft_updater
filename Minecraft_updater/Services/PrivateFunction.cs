@@ -4,17 +4,18 @@ using System.Net.Http;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
+using Minecraft_updater.Models;
 
 namespace Minecraft_updater.Services
 {
     public class PrivateFunction
     {
-        #region MD5 計算
-        public static string GetMD5(string filepath)
+        #region SHA256 計算
+        public static string GetSHA256(string filepath)
         {
             using var targetFile = new FileStream(filepath, FileMode.Open, FileAccess.Read);
-            using var md5 = MD5.Create();
-            return ByteToString(md5.ComputeHash(targetFile));
+            using var sha256 = SHA256.Create();
+            return ByteToString(sha256.ComputeHash(targetFile));
         }
 
         private static readonly StringBuilder sb = new StringBuilder();
@@ -26,7 +27,7 @@ namespace Minecraft_updater.Services
             {
                 sb.Append(i.ToString("x2"));
             }
-            return sb.ToString().ToUpper();
+            return sb.ToString();
         }
         #endregion
 
@@ -92,46 +93,96 @@ namespace Minecraft_updater.Services
         public static async Task<bool> DownloadFileAsync(
             string url,
             string path,
-            Action<string>? logAction = null
+            Action<string>? logAction = null,
+            string? expectedSha256 = null,
+            DownloadAuthenticationOptions? authenticationOptions = null
         )
         {
             using var httpClient = new HttpClient();
+            string? tempFilePath = null;
             try
             {
                 logAction?.Invoke($"正在下載: {Path.GetFileName(path)}");
 
-                if (!Directory.Exists(Path.GetDirectoryName(path)))
-                    Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+                var directory = Path.GetDirectoryName(path);
+                if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
+                {
+                    Directory.CreateDirectory(directory);
+                }
 
-                if (File.Exists(path))
-                    File.Delete(path);
+                var tempDirectory = Path.GetTempPath();
+                tempFilePath = Path.Combine(
+                    tempDirectory,
+                    $"{Path.GetFileName(path)}.{Guid.NewGuid():N}.tmp"
+                );
 
-                // 先解碼再重新編碼 URL
-                var decodedUrl = Uri.UnescapeDataString(url);
-                logAction?.Invoke($"🔗 URL 解碼結果: {decodedUrl}");
-                var uri = new Uri(decodedUrl);
+                using var request = HttpAuthenticationHelper.CreateAuthenticatedGetRequest(
+                    url,
+                    authenticationOptions
+                );
+                var sanitizedSource = HttpAuthenticationHelper.GetSanitizedUrlForLogging(
+                    request.RequestUri,
+                    authenticationOptions
+                );
+                logAction?.Invoke($"🔗 下載來源: {sanitizedSource}");
                 logAction?.Invoke("⬇️ 正在連線並取得檔案流...");
-                // response.EnsureSuccessStatusCode();
-                using var response = await httpClient.GetAsync(uri);
+                using var response = await httpClient.SendAsync(
+                    request,
+                    HttpCompletionOption.ResponseHeadersRead
+                );
                 response.EnsureSuccessStatusCode();
                 using var cloudefileStream = await response.Content.ReadAsStreamAsync();
-                logAction?.Invoke(
-                    $"✅ 成功取得檔案流。檔案大小 (可能為估計): {cloudefileStream.Length} bytes"
-                );
+
+                string fileSizeMessage;
+                if (response.Content.Headers.ContentLength is long contentLength)
+                {
+                    fileSizeMessage =
+                        $"✅ 成功取得檔案流。檔案大小 (可能為估計): {contentLength} bytes";
+                }
+                else if (cloudefileStream.CanSeek)
+                {
+                    fileSizeMessage =
+                        $"✅ 成功取得檔案流。檔案大小 (可能為估計): {cloudefileStream.Length} bytes";
+                }
+                else
+                {
+                    fileSizeMessage = "✅ 成功取得檔案流。檔案大小: 未提供 (串流模式)";
+                }
+
+                logAction?.Invoke(fileSizeMessage);
 
                 // 4. 將流寫入檔案
                 logAction?.Invoke($"💾 正在寫入檔案到: {path}");
 
                 await using var fileStream = new FileStream(
-                    path,
+                    tempFilePath,
                     FileMode.Create,
                     FileAccess.Write,
                     FileShare.None
                 );
                 await cloudefileStream.CopyToAsync(fileStream);
-                fileStream.Flush();
+                await fileStream.FlushAsync();
                 fileStream.Close();
                 logAction?.Invoke("🎉 檔案下載並寫入完成！");
+
+                var expectedHash = expectedSha256?.Trim();
+                if (!string.IsNullOrEmpty(expectedHash))
+                {
+                    var actualHash = GetSHA256(tempFilePath);
+                    if (
+                        !string.Equals(actualHash, expectedHash, StringComparison.OrdinalIgnoreCase)
+                    )
+                    {
+                        logAction?.Invoke(
+                            $"⚠️ 檔案校驗失敗，預期 SHA256 {expectedHash}、實際 {actualHash}，已取消更新。"
+                        );
+                        return false;
+                    }
+                }
+
+                logAction?.Invoke("📁 將新檔案覆蓋原始檔案");
+                File.Move(tempFilePath, path, true);
+                tempFilePath = null;
 
                 return true;
             }
@@ -140,14 +191,36 @@ namespace Minecraft_updater.Services
                 logAction?.Invoke($"出現以下錯誤: {Path.GetFileName(path)} - {e.Message}");
                 return false;
             }
+            finally
+            {
+                if (!string.IsNullOrEmpty(tempFilePath) && File.Exists(tempFilePath))
+                {
+                    try
+                    {
+                        File.Delete(tempFilePath);
+                    }
+                    catch
+                    {
+                        // Ignore cleanup failures
+                    }
+                }
+            }
         }
 
         /// <summary>
         /// 下載檔案 (同步版本，保持向後相容)
         /// </summary>
-        public static bool DownloadFile(string url, string path, Action<string>? logAction = null)
+        public static bool DownloadFile(
+            string url,
+            string path,
+            Action<string>? logAction = null,
+            string? expectedSha256 = null,
+            DownloadAuthenticationOptions? authenticationOptions = null
+        )
         {
-            return DownloadFileAsync(url, path, logAction).GetAwaiter().GetResult();
+            return DownloadFileAsync(url, path, logAction, expectedSha256, authenticationOptions)
+                .GetAwaiter()
+                .GetResult();
         }
         #endregion
     }

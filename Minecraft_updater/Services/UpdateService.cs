@@ -16,6 +16,68 @@ namespace Minecraft_updater.Services
         private const string GitHubApiUrl =
             "https://api.github.com/repos/flier268/Minecraft_updater/releases/latest";
 
+        internal static bool TryParseReleaseVersion(
+            string? tagName,
+            out Version version,
+            out string displayVersion
+        )
+        {
+            version = default!;
+            displayVersion = string.Empty;
+
+            if (string.IsNullOrWhiteSpace(tagName))
+            {
+                return false;
+            }
+
+            displayVersion = tagName!.Trim().TrimStart('v', 'V');
+
+            var sanitizedVersion = displayVersion;
+            var metadataIndex = sanitizedVersion.IndexOf('+');
+            if (metadataIndex >= 0)
+            {
+                sanitizedVersion = sanitizedVersion[..metadataIndex];
+            }
+
+            var prereleaseIndex = sanitizedVersion.IndexOf('-');
+            if (prereleaseIndex >= 0)
+            {
+                sanitizedVersion = sanitizedVersion[..prereleaseIndex];
+            }
+
+            sanitizedVersion = sanitizedVersion.Trim();
+            if (Version.TryParse(sanitizedVersion, out var parsedVersion))
+            {
+                version = parsedVersion;
+                return true;
+            }
+
+            var numericBuilder = new StringBuilder();
+            foreach (var c in sanitizedVersion)
+            {
+                if (char.IsDigit(c) || c == '.')
+                {
+                    numericBuilder.Append(c);
+                }
+                else
+                {
+                    break;
+                }
+            }
+
+            if (
+                numericBuilder.Length > 0
+                && Version.TryParse(numericBuilder.ToString(), out parsedVersion)
+            )
+            {
+                version = parsedVersion;
+                return true;
+            }
+
+            displayVersion = string.Empty;
+            return false;
+        }
+
         /// <summary>
         /// 檢查是否有更新 (非同步版本)
         /// </summary>
@@ -48,8 +110,17 @@ namespace Minecraft_updater.Services
                     }
 
                     // 移除 'v' 前綴並解析版本號
-                    var versionString = tagName.TrimStart('v');
-                    var latestVersion = new Version(versionString);
+                    if (
+                        !TryParseReleaseVersion(
+                            tagName,
+                            out var latestVersion,
+                            out var displayVersion
+                        )
+                    )
+                    {
+                        return updateMessage;
+                    }
+
                     var currentVersion =
                         Assembly.GetEntryAssembly()?.GetName().Version ?? new Version("0.0.0.0");
 
@@ -62,7 +133,7 @@ namespace Minecraft_updater.Services
                     else
                     {
                         updateMessage.HaveUpdate = true;
-                        updateMessage.NewstVersion = versionString;
+                        updateMessage.NewstVersion = displayVersion;
 
                         // 取得 Release 的 body 作為更新訊息
                         if (root.TryGetProperty("body", out var bodyElement))

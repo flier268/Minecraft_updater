@@ -1,117 +1,278 @@
-<Window xmlns="https://github.com/avaloniaui"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:vm="using:Minecraft_updater.ViewModels"
-        xmlns:views="using:Minecraft_updater.Views"
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        mc:Ignorable="d" d:DesignWidth="900" d:DesignHeight="700"
-        x:Class="Minecraft_updater.Views.UpdatepackMakerWindow"
-        x:DataType="vm:UpdatepackMakerWindowViewModel"
-        Title="Minecraft Updater - Pack Maker"
-        Icon="/Assets/minecraft_updater.ico"
-        Width="900" Height="700"
-        MinWidth="600" MinHeight="600"
-        WindowStartupLocation="CenterScreen"
-        DragDrop.AllowDrop="True">
+<Window
+    x:Class="Minecraft_updater.Views.UpdatepackMakerWindow"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:views="using:Minecraft_updater.Views"
+    xmlns:vm="using:Minecraft_updater.ViewModels"
+    Title="Minecraft Updater - Pack Maker"
+    MinWidth="600"
+    MinHeight="600"
+    VerticalAlignment="Stretch"
+    d:DesignHeight="700"
+    d:DesignWidth="900"
+    x:DataType="vm:UpdatepackMakerWindowViewModel"
+    DragDrop.AllowDrop="True"
+    Icon="/Assets/minecraft_updater.ico"
+    WindowStartupLocation="CenterScreen"
+    mc:Ignorable="d">
 
     <Design.DataContext>
         <vm:UpdatepackMakerWindowViewModel />
     </Design.DataContext>
+    <Grid ColumnDefinitions="* Auto" RowDefinitions="Auto Auto *">
 
-    <Grid Margin="10">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-            <RowDefinition Height="*"/>
-            <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
-        </Grid.RowDefinitions>
-
-        <!-- 選單 -->
+        <!--  選單  -->
         <Menu Grid.Row="0" Margin="0,0,0,10">
             <MenuItem Header="Files">
-                <MenuItem Header="Load" Click="OnLoadClick"/>
+                <MenuItem Click="OnLoadClick" Header="Load" />
             </MenuItem>
+            <MenuItem Header="About" Click="OnAboutClicked" />
         </Menu>
 
-        <!-- Base Path 和 Base URL 輸入 -->
-        <Grid Grid.Row="1" Margin="0,0,0,10">
+
+        <!--  Base Path 和 Base URL 輸入  -->
+        <Grid Grid.Row="1" Margin="8,0,8,10">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
 
             <StackPanel Grid.Column="0" Spacing="10">
-                <!-- Base Path -->
+                <!--  Base Path  -->
                 <StackPanel Orientation="Horizontal" Spacing="10">
-                    <TextBlock Text="Base Path:" VerticalAlignment="Center" Width="80"/>
-                    <TextBox Text="{Binding BasePath}"
-                             Width="380"
-                             IsReadOnly="True"
-                             Watermark="請選取基礎目錄..."/>
-                    <Button Content="選取目錄" Click="OnSelectBasePathClick"/>
+                    <TextBlock
+                        Width="80"
+                        VerticalAlignment="Center"
+                        Text="Base Path:" />
+                    <TextBox
+                        Width="380"
+                        IsReadOnly="True"
+                        Text="{Binding BasePath}"
+                        Watermark="請選取基礎目錄..." />
+                    <Button Click="OnSelectBasePathClick" Content="選取目錄" />
                 </StackPanel>
 
-                <!-- Base URL -->
+                <!--  Base URL  -->
                 <StackPanel Orientation="Horizontal" Spacing="10">
-                    <TextBlock Text="Base URL:" VerticalAlignment="Center" Width="80"/>
-                    <TextBox Text="{Binding BaseUrl}"
-                             Width="380"
-                             Watermark="http://example.com/"/>
+                    <TextBlock
+                        Width="80"
+                        VerticalAlignment="Center"
+                        Text="Base URL:" />
+                    <TextBox
+                        Width="380"
+                        Text="{Binding BaseUrl}"
+                        Watermark="http://example.com/" />
                 </StackPanel>
+
+                <!--  Authentication  -->
+                <Border
+                    Margin="0,0,0,10"
+                    Padding="10"
+                    BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                    BorderThickness="1">
+                    <StackPanel Spacing="8">
+                        <TextBlock FontWeight="Bold" Text="下載來源身份驗證" />
+
+                        <Grid ColumnDefinitions="120,*" ColumnSpacing="10">
+                            <TextBlock VerticalAlignment="Center" Text="驗證模式：" />
+                            <ComboBox
+                                Grid.Column="1"
+                                MinWidth="200"
+                                ItemsSource="{Binding AuthenticationModes}"
+                                SelectedItem="{Binding SelectedAuthMode}" />
+                        </Grid>
+
+                        <StackPanel IsVisible="{Binding ShowBasicFields}" Spacing="6">
+                            <Grid ColumnDefinitions="120,*" ColumnSpacing="10">
+                                <TextBlock VerticalAlignment="Center" Text="使用者名稱：" />
+                                <TextBox
+                                    Grid.Column="1"
+                                    Text="{Binding AuthUsername, UpdateSourceTrigger=PropertyChanged}"
+                                    Watermark="帳號" />
+                            </Grid>
+                            <Grid ColumnDefinitions="120,*" ColumnSpacing="10">
+                                <TextBlock VerticalAlignment="Center" Text="密碼：" />
+                                <TextBox
+                                    Grid.Column="1"
+                                    PasswordChar="*"
+                                    Text="{Binding AuthPassword, UpdateSourceTrigger=PropertyChanged}"
+                                    Watermark="密碼" />
+                            </Grid>
+                        </StackPanel>
+
+                        <StackPanel IsVisible="{Binding ShowBearerTokenField}" Spacing="6">
+                            <Grid ColumnDefinitions="120,*" ColumnSpacing="10">
+                                <TextBlock VerticalAlignment="Center" Text="Bearer Token：" />
+                                <TextBox
+                                    Grid.Column="1"
+                                    Text="{Binding AuthBearerToken, UpdateSourceTrigger=PropertyChanged}"
+                                    Watermark="請輸入 Token" />
+                            </Grid>
+                        </StackPanel>
+
+                        <StackPanel IsVisible="{Binding ShowHeaderFields}" Spacing="6">
+                            <Grid ColumnDefinitions="120,*" ColumnSpacing="10">
+                                <TextBlock VerticalAlignment="Center" Text="Header 名稱：" />
+                                <TextBox
+                                    Grid.Column="1"
+                                    Text="{Binding AuthHeaderName, UpdateSourceTrigger=PropertyChanged}"
+                                    Watermark="例如 X-API-Key" />
+                            </Grid>
+                            <Grid ColumnDefinitions="120,*" ColumnSpacing="10">
+                                <TextBlock VerticalAlignment="Center" Text="Header 值：" />
+                                <TextBox
+                                    Grid.Column="1"
+                                    Text="{Binding AuthHeaderValue, UpdateSourceTrigger=PropertyChanged}"
+                                    Watermark="請輸入憑證值" />
+                            </Grid>
+                        </StackPanel>
+
+                        <StackPanel IsVisible="{Binding ShowQueryFields}" Spacing="6">
+                            <Grid ColumnDefinitions="120,*" ColumnSpacing="10">
+                                <TextBlock VerticalAlignment="Center" Text="參數名稱：" />
+                                <TextBox
+                                    Grid.Column="1"
+                                    Text="{Binding AuthQueryName, UpdateSourceTrigger=PropertyChanged}"
+                                    Watermark="例如 token" />
+                            </Grid>
+                            <Grid ColumnDefinitions="120,*" ColumnSpacing="10">
+                                <TextBlock VerticalAlignment="Center" Text="參數值：" />
+                                <TextBox
+                                    Grid.Column="1"
+                                    Text="{Binding AuthQueryValue, UpdateSourceTrigger=PropertyChanged}"
+                                    Watermark="請輸入參數值" />
+                            </Grid>
+                        </StackPanel>
+
+                        <TextBlock
+                            Foreground="Gray"
+                            IsVisible="{Binding ShowAuthDetails}"
+                            Text="所有檔案下載都會套用此身份驗證設定" />
+                    </StackPanel>
+                </Border>
             </StackPanel>
 
-            <Border Grid.Column="1"
-                    BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}"
-                    BorderThickness="1"
-                    Padding="10"
-                    Margin="10,0,0,0">
-                <StackPanel>
-                    <TextBlock Text="特殊設定" FontWeight="Bold" Margin="0,0,0,5"/>
-                    <CheckBox Content="將&quot;mod&quot;下的檔案加入刪除清單"
-                              IsChecked="{Binding AddModToDelete}"/>
-                    <CheckBox Content="將&quot;config&quot;下的檔案加入刪除清單"
-                              IsChecked="{Binding AddConfigToDelete}"
-                              Margin="0,5,0,0"/>
-                </StackPanel>
-            </Border>
+        </Grid>
+        <Grid
+            Grid.Row="2"
+            Margin="8,0,8,8"
+            ColumnDefinitions="* Auto"
+            RowDefinitions="Auto * * * Auto"
+            RowSpacing="10">
+            <TextBlock
+                Grid.Row="0"
+                Margin="0,0,0,5"
+                Foreground="Gray"
+                Text="提示：將檔案或資料夾拖曳到下方的文字框中" />
+
+            <!--  同步清單  -->
+            <views:FileListControl
+                x:Name="SyncListControl"
+                Title="同步清單"
+                Grid.Row="1"
+                MinHeight="150"
+                ClearCommand="{Binding ClearSyncListCommand}"
+                ListIndex="0"
+                ListText="{Binding SyncListText}" />
+
+            <!--  刪除清單  -->
+            <views:FileListControl
+                x:Name="DeleteListControl"
+                Title="刪除清單"
+                Grid.Row="2"
+                MinHeight="150"
+                ClearCommand="{Binding ClearDeleteListCommand}"
+                ListIndex="1"
+                ListText="{Binding DeleteListText}" />
+
+            <!--  不存在則添加清單  -->
+            <views:FileListControl
+                x:Name="DownloadWhenNotExistListControl"
+                Title="不存在則添加清單"
+                Grid.Row="3"
+                MinHeight="150"
+                ClearCommand="{Binding ClearDownloadWhenNotExistListCommand}"
+                ListIndex="2"
+                ListText="{Binding DownloadWhenNotExistText}" />
+
+            <!--  儲存按鈕  -->
+            <Button
+                Grid.Row="4"
+                MinWidth="100"
+                Padding="20,8"
+                HorizontalAlignment="Center"
+                Click="OnSaveClick"
+                Content="儲存" />
+
+
         </Grid>
 
-        <TextBlock Grid.Row="2" Text="提示：將檔案或資料夾拖曳到下方的文字框中"
-                   Foreground="Gray" Margin="0,0,0,5"/>
 
-        <!-- 同步清單 -->
-        <views:FileListControl Grid.Row="3"
-                               x:Name="SyncListControl"
-                               Title="同步清單"
-                               ListText="{Binding SyncListText}"
-                               ClearCommand="{Binding ClearSyncListCommand}"
-                               ListIndex="0"/>
+        <Border
+            Grid.Row="1"
+            Grid.Column="1"
+            Margin="0,0,8,0"
+            Padding="10"
+            BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+            BorderThickness="1">
+            <StackPanel>
+                <TextBlock
+                    Margin="0,0,0,5"
+                    FontWeight="Bold"
+                    Text="特殊設定" />
+                <CheckBox Content="將&quot;mod&quot;下的檔案加入刪除清單" IsChecked="{Binding AddModToDelete}" />
+                <CheckBox
+                    Margin="0,5,0,0"
+                    Content="將&quot;config&quot;下的檔案加入刪除清單"
+                    IsChecked="{Binding AddConfigToDelete}" />
+                <Separator Margin="0,10,0,10" />
+                <Grid ColumnDefinitions="Auto Auto *" ColumnSpacing="10">
+                    <TextBlock VerticalAlignment="Center">
+                        <Run Text="版本：" />
+                        <Run Text="{Binding ApplicationVersion}" />
+                    </TextBlock>
 
-        <!-- 刪除清單 -->
-        <views:FileListControl Grid.Row="4"
-                               x:Name="DeleteListControl"
-                               Title="刪除清單"
-                               ListText="{Binding DeleteListText}"
-                               ClearCommand="{Binding ClearDeleteListCommand}"
-                               ListIndex="1"/>
+                    <Button
+                        Grid.Column="1"
+                        Margin="10,0,0,0"
+                        Padding="12,6"
+                        Command="{Binding ManualCheckUpdateCommand}"
+                        Content="手動檢查更新"
+                        IsEnabled="{Binding IsManualCheckEnabled}" />
 
-        <!-- 不存在則添加清單 -->
-        <views:FileListControl Grid.Row="5"
-                               x:Name="DownloadWhenNotExistListControl"
-                               Title="不存在則添加清單"
-                               ListText="{Binding DownloadWhenNotExistText}"
-                               ClearCommand="{Binding ClearDownloadWhenNotExistListCommand}"
-                               ListIndex="2"/>
+                    <CheckBox
+                        Grid.Column="2"
+                        Margin="10,0,0,0"
+                        VerticalAlignment="Center"
+                        Content="停用自動更新"
+                        IsChecked="{Binding IsSelfUpdateDisabled}" />
+                </Grid>
+            </StackPanel>
+        </Border>
+        <!--  日誌顯示  -->
+        <Border
+            Grid.Row="2"
+            Grid.Column="1"
+            Margin="0,0,8,0"
+            Padding="5"
+            VerticalAlignment="Stretch"
+            Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
+            BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+            BorderThickness="1">
 
-        <!-- 儲存按鈕 -->
-        <Button Grid.Row="6"
-                Content="儲存"
-                HorizontalAlignment="Center"
-                Padding="20,8"
-                MinWidth="100"
-                Click="OnSaveClick"/>
+            <ItemsControl ItemsSource="{Binding LogMessages}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <TextBlock
+                            Margin="2"
+                            Text="{Binding}"
+                            TextWrapping="Wrap" />
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
+        </Border>
     </Grid>
 </Window>

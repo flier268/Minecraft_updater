@@ -12,6 +12,7 @@ using Avalonia.Data.Core.Plugins;
 using Avalonia.Markup.Xaml;
 using Avalonia.Threading;
 using Minecraft_updater.Models;
+using Minecraft_updater.Services;
 using Minecraft_updater.ViewModels;
 using Minecraft_updater.Views;
 using MsBox.Avalonia;
@@ -23,6 +24,7 @@ public partial class App : Application
 {
     public static List<string> Args { get; set; } = new List<string>();
     public static string Command { get; set; } = string.Empty;
+    public static string ConfigPath { get; private set; } = string.Empty;
 
     public override void Initialize()
     {
@@ -36,6 +38,8 @@ public partial class App : Application
             // Avoid duplicate validations from both Avalonia and the CommunityToolkit.
             // More info: https://docs.avaloniaui.net/docs/guides/development-guides/data-validation#manage-validationplugins
             DisableAvaloniaDataAnnotationValidation();
+
+            PrepareConfigurationPath();
 
             // 根據命令列參數決定要顯示哪個視窗
             if (Args.Count > 0)
@@ -58,15 +62,37 @@ public partial class App : Application
                 {
                     // 檢查更新器版本並自動更新
                     desktop.ShutdownMode = ShutdownMode.OnExplicitShutdown;
+                    var ini = new IniFile(ConfigPath);
+                    var preferences = new UpdatePreferencesService(ini);
                     Task.Run(async () =>
                     {
+                        if (preferences.IsSelfUpdateDisabled)
+                        {
+                            desktop.Shutdown();
+                            return;
+                        }
+
                         var updateMessage = await Services.UpdateService.CheckUpdateAsync();
                         if (updateMessage.HaveUpdate)
                         {
+                            var skippedVersion = preferences.SkippedVersion;
+                            if (
+                                !string.IsNullOrEmpty(skippedVersion)
+                                && string.Equals(
+                                    skippedVersion,
+                                    updateMessage.NewstVersion,
+                                    StringComparison.OrdinalIgnoreCase
+                                )
+                            )
+                            {
+                                desktop.Shutdown();
+                                return;
+                            }
+
                             await Dispatcher.UIThread.InvokeAsync(() =>
                             {
                                 var updateWindow = new Views.UpdateSelfWindow(
-                                    new UpdateSelfWindowViewModel(updateMessage)
+                                    new UpdateSelfWindowViewModel(updateMessage, preferences)
                                 );
                                 desktop.MainWindow = updateWindow;
                                 updateWindow.Show();
@@ -103,6 +129,11 @@ public partial class App : Application
         sb.AppendLine();
         sb.AppendLine("Minecraft懶人包之檔案清單建立工具：");
         sb.AppendLine($"Minecraft_updater.exe {ListCommand.UpdatepackMaker}");
+        sb.AppendLine();
+        sb.AppendLine("可選參數：");
+        sb.AppendLine(
+            "  --config <path> 或 -c <path> 指定自訂設定檔 (預設為 Minecraft_updater.ini)"
+        );
 
         // 使用 Avalonia 的訊息框顯示訊息
         var messageBox = MessageBoxManager.GetMessageBoxStandard(
@@ -152,5 +183,19 @@ public partial class App : Application
         {
             BindingPlugins.DataValidators.Remove(plugin);
         }
+    }
+
+    private void PrepareConfigurationPath()
+    {
+        var baseDirectory = AppContext.BaseDirectory;
+        var optionArgs = Args.Count > 1 ? Args.Skip(1) : Array.Empty<string>();
+        var resolvedPath = Services.ConfigurationPathResolver.DetermineConfigPath(
+            optionArgs,
+            baseDirectory
+        );
+        ConfigPath = Services.ConfigurationPathResolver.EnsureConfigurationFile(
+            resolvedPath,
+            baseDirectory
+        );
     }
 }

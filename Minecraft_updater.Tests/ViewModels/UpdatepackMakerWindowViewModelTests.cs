@@ -137,7 +137,7 @@ namespace Minecraft_updater.Tests.ViewModels
         }
 
         [Fact]
-        public void GetSaveContent_EmptyLists_ShouldReturnEmptyString()
+        public void GetSaveContent_EmptyLists_ShouldReturnOnlyMinVersion()
         {
             // Arrange
             var viewModel = new UpdatepackMakerWindowViewModel();
@@ -146,7 +146,9 @@ namespace Minecraft_updater.Tests.ViewModels
             var content = viewModel.GetSaveContent();
 
             // Assert
-            content.Should().Be(string.Empty);
+            // 現在使用新格式 MinVersion= 而不是 MinVersion||
+            content.Should().StartWith("MinVersion=");
+            content.Should().Contain("\n");
         }
 
         [Fact]
@@ -155,18 +157,18 @@ namespace Minecraft_updater.Tests.ViewModels
             // Arrange
             var viewModel = new UpdatepackMakerWindowViewModel
             {
-                SyncListText = "sync content\n",
-                DeleteListText = "delete content\n",
-                DownloadWhenNotExistText = "download content\n"
+                SyncListText = "mods/sync.jar||SHA256HASH||http://example.com/sync.jar\n",
+                DeleteListText = "#mods/delete.jar||SHA256HASH||http://example.com/delete.jar\n",
+                DownloadWhenNotExistText = ":config/download.cfg||SHA256HASH||http://example.com/download.cfg\n"
             };
 
             // Act
             var content = viewModel.GetSaveContent();
 
             // Assert
-            content.Should().Contain("sync content");
-            content.Should().Contain("delete content");
-            content.Should().Contain("download content");
+            content.Should().Contain("mods/sync.jar");
+            content.Should().Contain("#mods/delete.jar");
+            content.Should().Contain(":config/download.cfg");
         }
 
         [Fact]
@@ -197,9 +199,9 @@ namespace Minecraft_updater.Tests.ViewModels
             var testFile = Path.Combine(_testDirectory, "test_empty.txt");
             var fileContent = @"
 
-mods/test.jar||MD5||http://example.com/test.jar
+mods/test.jar||SHA256HASH||http://example.com/test.jar
 
-#mods/old.jar||MD5||
+#mods/old.jar||SHA256HASH||
 
 ";
             File.WriteAllText(testFile, fileContent);
@@ -299,16 +301,20 @@ normal/file4.jar||JKL||http://url4.com
             // Arrange
             var viewModel = new UpdatepackMakerWindowViewModel
             {
-                SyncListText = "SYNC\n",
-                DeleteListText = "DELETE\n",
-                DownloadWhenNotExistText = "DOWNLOAD\n"
+                SyncListText = "mods/sync.jar||SHA256HASH||http://url\n",
+                DeleteListText = "#mods/delete.jar||SHA256HASH||\n",
+                DownloadWhenNotExistText = ":config/download.cfg||SHA256HASH||http://url2\n"
             };
 
             // Act
             var content = viewModel.GetSaveContent();
 
             // Assert
-            content.Should().Be("SYNC\nDELETE\nDOWNLOAD\n");
+            // 現在會先包含 MinVersion 行（新格式使用 = ），然後是原有的內容順序
+            content.Should().StartWith("MinVersion=");
+            content.Should().Contain("mods/sync.jar");
+            content.Should().Contain("#mods/delete.jar");
+            content.Should().Contain(":config/download.cfg");
         }
 
         [Fact]

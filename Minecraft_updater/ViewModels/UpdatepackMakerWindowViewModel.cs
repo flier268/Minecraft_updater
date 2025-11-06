@@ -1,11 +1,11 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
-using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Avalonia.Platform.Storage;
@@ -22,6 +22,11 @@ namespace Minecraft_updater.ViewModels
         private readonly IniFile _ini;
         private readonly string _appPath;
         private readonly char[] _delimiter = { '+', '-', '_' };
+        private readonly PackSerializerService _serializer;
+        private readonly PackDeserializerService _deserializer;
+        private readonly UpdatePreferencesService _updatePreferences;
+        private bool _isInitializingAuth;
+        private bool _isInitializingPreferences = true;
 
         [ObservableProperty]
         private string _baseUrl = "http://aaa.bb.com/";
@@ -44,11 +49,62 @@ namespace Minecraft_updater.ViewModels
         [ObservableProperty]
         private string _downloadWhenNotExistText = string.Empty;
 
+        public IReadOnlyList<DownloadAuthenticationMode> AuthenticationModes { get; } =
+            Enum.GetValues<DownloadAuthenticationMode>();
+
+        [ObservableProperty]
+        private DownloadAuthenticationMode _selectedAuthMode = DownloadAuthenticationMode.None;
+
+        [ObservableProperty]
+        private string _authUsername = string.Empty;
+
+        [ObservableProperty]
+        private string _authPassword = string.Empty;
+
+        [ObservableProperty]
+        private string _authBearerToken = string.Empty;
+
+        [ObservableProperty]
+        private string _authHeaderName = string.Empty;
+
+        [ObservableProperty]
+        private string _authHeaderValue = string.Empty;
+
+        [ObservableProperty]
+        private string _authQueryName = string.Empty;
+
+        [ObservableProperty]
+        private string _authQueryValue = string.Empty;
+
+        public bool ShowBasicFields => SelectedAuthMode == DownloadAuthenticationMode.Basic;
+        public bool ShowBearerTokenField =>
+            SelectedAuthMode == DownloadAuthenticationMode.BearerToken;
+        public bool ShowHeaderFields => SelectedAuthMode == DownloadAuthenticationMode.ApiKeyHeader;
+        public bool ShowQueryFields => SelectedAuthMode == DownloadAuthenticationMode.ApiKeyQuery;
+        public bool ShowAuthDetails => SelectedAuthMode != DownloadAuthenticationMode.None;
+
+        [ObservableProperty]
+        private bool _isSelfUpdateDisabled;
+
+        [ObservableProperty]
+        private bool _isCheckingUpdates;
+
+        [ObservableProperty]
+        private string _applicationVersion = "Unknown";
+
+        [ObservableProperty]
+        private ObservableCollection<string> _logMessages = new();
+
         public UpdatepackMakerWindowViewModel()
         {
             _appPath = AppContext.BaseDirectory;
-            var configPath = Path.Combine(_appPath, "config.ini");
+            var configPath = !string.IsNullOrWhiteSpace(App.ConfigPath)
+                ? App.ConfigPath
+                : Path.Combine(_appPath, Services.ConfigurationPathResolver.DefaultFileName);
             _ini = new IniFile(configPath);
+            _serializer = new PackSerializerService();
+            _deserializer = new PackDeserializerService();
+            _updatePreferences = new UpdatePreferencesService(_ini);
 
             // 載入設定
             var savedUrl = _ini.IniReadValue("Minecraft_updater", "updatepackMaker_BaseURL");
@@ -64,6 +120,28 @@ namespace Minecraft_updater.ViewModels
             }
 
             Log.LogFile = _ini.IniReadValue("Minecraft_updater", "LogFile").ToLower() == "true";
+            IsSelfUpdateDisabled = _updatePreferences.IsSelfUpdateDisabled;
+            ApplicationVersion =
+                Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "Unknown";
+            _isInitializingPreferences = false;
+
+            _isInitializingAuth = true;
+            var authOptions = DownloadAuthenticationOptions.FromIni(_ini);
+            SelectedAuthMode = authOptions.Mode;
+            AuthUsername = authOptions.Username ?? string.Empty;
+            AuthPassword = authOptions.Password ?? string.Empty;
+            AuthBearerToken = authOptions.BearerToken ?? string.Empty;
+            AuthHeaderName = authOptions.HeaderName ?? string.Empty;
+            AuthHeaderValue = authOptions.HeaderValue ?? string.Empty;
+            AuthQueryName = authOptions.QueryParameterName ?? string.Empty;
+            AuthQueryValue = authOptions.QueryParameterValue ?? string.Empty;
+            _isInitializingAuth = false;
+
+            OnPropertyChanged(nameof(ShowBasicFields));
+            OnPropertyChanged(nameof(ShowBearerTokenField));
+            OnPropertyChanged(nameof(ShowHeaderFields));
+            OnPropertyChanged(nameof(ShowQueryFields));
+            OnPropertyChanged(nameof(ShowAuthDetails));
         }
 
         partial void OnBaseUrlChanged(string value)
@@ -82,12 +160,40 @@ namespace Minecraft_updater.ViewModels
             await CheckSelfUpdateAsync();
         }
 
-        private async Task CheckSelfUpdateAsync()
+        private void AddLog(string message, string? color = null)
         {
-            Log.AddLine("檢查Minecraft updater是否有更新...");
+            Dispatcher.UIThread.Post(() =>
+            {
+                LogMessages.Add(message);
+                Log.AddLine(message);
+            });
+        }
+
+        [RelayCommand]
+        private async Task ManualCheckUpdateAsync() => await CheckSelfUpdateAsync(force: true);
+
+        private async Task CheckSelfUpdateAsync(bool force = false)
+        {
+            if (IsCheckingUpdates)
+            {
+                AddLog("更新檢查正在進行中，請稍候...");
+                return;
+            }
+
+            if (!force && IsSelfUpdateDisabled)
+            {
+                AddLog("自動更新檢查已停用");
+                return;
+            }
+
+            AddLog(
+                force ? "手動檢查Minecraft updater更新..." : "檢查Minecraft updater是否有更新..."
+            );
 
             try
             {
+                IsCheckingUpdates = true;
+
                 var filename = Environment.GetCommandLineArgs()[0] ?? "";
                 var tempFilename =
                     Path.GetFileNameWithoutExtension(filename)
@@ -101,10 +207,25 @@ namespace Minecraft_updater.ViewModels
                 var updateMessage = await UpdateService.CheckUpdateAsync();
                 if (updateMessage.HaveUpdate)
                 {
+                    var skippedVersion = _updatePreferences.SkippedVersion;
+                    if (
+                        !force
+                        && !string.IsNullOrEmpty(skippedVersion)
+                        && string.Equals(
+                            skippedVersion,
+                            updateMessage.NewstVersion,
+                            StringComparison.OrdinalIgnoreCase
+                        )
+                    )
+                    {
+                        AddLog($"已設定略過版本 {updateMessage.NewstVersion}，此次不提示。");
+                        return;
+                    }
+
                     await Dispatcher.UIThread.InvokeAsync(async () =>
                     {
                         var updateWindow = new Views.UpdateSelfWindow(
-                            new UpdateSelfWindowViewModel(updateMessage)
+                            new UpdateSelfWindowViewModel(updateMessage, _updatePreferences, force)
                         );
                         if (
                             Avalonia.Application.Current?.ApplicationLifetime
@@ -113,13 +234,22 @@ namespace Minecraft_updater.ViewModels
                         )
                         {
                             await updateWindow.ShowDialog(desktop.MainWindow);
+                            IsSelfUpdateDisabled = _updatePreferences.IsSelfUpdateDisabled;
                         }
                     });
+                }
+                else if (force)
+                {
+                    AddLog("已經是最新版本。");
                 }
             }
             catch (Exception ex)
             {
-                Log.AddLine($"檢查更新失敗: {ex.Message}");
+                AddLog($"檢查更新失敗: {ex.Message}");
+            }
+            finally
+            {
+                IsCheckingUpdates = false;
             }
         }
 
@@ -158,7 +288,7 @@ namespace Minecraft_updater.ViewModels
                 )
                 {
                     // 檔案不在基礎目錄下
-                    Log.AddLine($"檔案 {path} 不在基礎目錄 {baseDirectory} 下，已跳過");
+                    AddLog($"檔案 {path} 不在基礎目錄 {baseDirectory} 下，已跳過");
                     continue;
                 }
 
@@ -191,14 +321,23 @@ namespace Minecraft_updater.ViewModels
         )
         {
             var name = filePath.Substring(basepathLength);
-            var md5 = PrivateFunction.GetMD5(filePath);
+            var sha256 = PrivateFunction.GetSHA256(filePath);
             var url = BaseUrl + name.Replace("\\", "/");
             var delimiterIndex = name.IndexOfAny(_delimiter);
 
             switch (targetListIndex)
             {
                 case 0: // 同步清單
-                    sb1.AppendLine($"{name}||{md5}||{url}");
+                    var syncPack = new Pack
+                    {
+                        Path = name,
+                        SHA256 = sha256,
+                        URL = url,
+                        Delete = false,
+                        DownloadWhenNotExist = false,
+                    };
+                    sb1.AppendLine(_serializer.SerializeLine(syncPack));
+
                     if (
                         (AddModToDelete && name.Contains("mod"))
                         || (AddConfigToDelete && name.Contains("config"))
@@ -208,7 +347,14 @@ namespace Minecraft_updater.ViewModels
                             0,
                             delimiterIndex == -1 ? name.Length : delimiterIndex
                         );
-                        sb2.AppendLine($"#{deleteName}||{md5}||");
+                        var deletePack = new Pack
+                        {
+                            Path = deleteName,
+                            SHA256 = sha256,
+                            URL = "",
+                            Delete = true,
+                        };
+                        sb2.AppendLine(_serializer.SerializeLine(deletePack));
                     }
                     break;
 
@@ -217,7 +363,14 @@ namespace Minecraft_updater.ViewModels
                         0,
                         delimiterIndex == -1 ? name.Length : delimiterIndex
                     );
-                    sb2.AppendLine($"#{deleteNameDirect}||{md5}||");
+                    var deletePackDirect = new Pack
+                    {
+                        Path = deleteNameDirect,
+                        SHA256 = sha256,
+                        URL = "",
+                        Delete = true,
+                    };
+                    sb2.AppendLine(_serializer.SerializeLine(deletePackDirect));
                     break;
 
                 case 2: // 不存在則添加清單
@@ -225,7 +378,14 @@ namespace Minecraft_updater.ViewModels
                         0,
                         delimiterIndex == -1 ? name.Length : delimiterIndex
                     );
-                    sb3.AppendLine($":{downloadName}||{md5}||{url}");
+                    var downloadPack = new Pack
+                    {
+                        Path = downloadName,
+                        SHA256 = sha256,
+                        URL = url,
+                        DownloadWhenNotExist = true,
+                    };
+                    sb3.AppendLine(_serializer.SerializeLine(downloadPack));
                     break;
             }
         }
@@ -259,52 +419,39 @@ namespace Minecraft_updater.ViewModels
         {
             try
             {
-                var regex = new Regex("(.*?)\\|\\|(.*?)\\|\\|(.*)", RegexOptions.Singleline);
+                var content = await File.ReadAllTextAsync(filePath);
+                var (packs, minimumVersion) = _deserializer.DeserializeFile(content);
+
                 var sb1 = new StringBuilder();
                 var sb2 = new StringBuilder();
                 var sb3 = new StringBuilder();
                 string? detectedBaseUrl = null;
 
-                using var reader = new StreamReader(filePath);
-                while (!reader.EndOfStream)
+                // 根據 Pack 的屬性分類到不同的清單
+                foreach (var pack in packs)
                 {
-                    var line = await reader.ReadLineAsync();
-                    if (string.IsNullOrWhiteSpace(line))
-                        continue;
+                    var serializedLine = _serializer.SerializeLine(pack);
 
-                    if (line.StartsWith("#"))
+                    if (pack.Delete)
                     {
-                        sb2.AppendLine(line);
+                        sb2.AppendLine(serializedLine);
                     }
-                    else if (line.StartsWith(":"))
+                    else if (pack.DownloadWhenNotExist)
                     {
-                        sb3.AppendLine(line);
+                        sb3.AppendLine(serializedLine);
                         // 嘗試從不存在則添加清單中偵測 BaseUrl
-                        if (detectedBaseUrl == null)
+                        if (detectedBaseUrl == null && !string.IsNullOrEmpty(pack.URL))
                         {
-                            var match = regex.Match(line);
-                            if (match.Success && match.Groups.Count > 3)
-                            {
-                                var url = match.Groups[3].Value;
-                                detectedBaseUrl = TryExtractBaseUrl(
-                                    url,
-                                    match.Groups[1].Value.TrimStart(':')
-                                );
-                            }
+                            detectedBaseUrl = TryExtractBaseUrl(pack.URL, pack.Path);
                         }
                     }
                     else
                     {
-                        var match = regex.Match(line);
-                        if (match.Success)
+                        sb1.AppendLine(serializedLine);
+                        // 嘗試從同步清單中偵測 BaseUrl
+                        if (detectedBaseUrl == null && !string.IsNullOrEmpty(pack.URL))
                         {
-                            sb1.AppendLine(line);
-                            // 嘗試從同步清單中偵測 BaseUrl
-                            if (detectedBaseUrl == null && match.Groups.Count > 3)
-                            {
-                                var url = match.Groups[3].Value;
-                                detectedBaseUrl = TryExtractBaseUrl(url, match.Groups[1].Value);
-                            }
+                            detectedBaseUrl = TryExtractBaseUrl(pack.URL, pack.Path);
                         }
                     }
                 }
@@ -317,7 +464,7 @@ namespace Minecraft_updater.ViewModels
                 if (!string.IsNullOrEmpty(detectedBaseUrl))
                 {
                     BaseUrl = detectedBaseUrl;
-                    Log.AddLine($"從 SC 檔案中偵測到 Base URL: {detectedBaseUrl}");
+                    AddLog($"從 SC 檔案中偵測到 Base URL: {detectedBaseUrl}");
                 }
 
                 // 嘗試從 SC 檔案所在目錄偵測 BasePath
@@ -325,12 +472,12 @@ namespace Minecraft_updater.ViewModels
                 if (!string.IsNullOrEmpty(scFileDirectory) && Directory.Exists(scFileDirectory))
                 {
                     BasePath = scFileDirectory;
-                    Log.AddLine($"將 Base Path 設定為 SC 檔案所在目錄: {scFileDirectory}");
+                    AddLog($"將 Base Path 設定為 SC 檔案所在目錄: {scFileDirectory}");
                 }
             }
             catch (Exception ex)
             {
-                Log.AddLine($"載入檔案失敗: {ex.Message}");
+                AddLog($"載入檔案失敗: {ex.Message}");
             }
         }
 
@@ -361,11 +508,171 @@ namespace Minecraft_updater.ViewModels
 
         public string GetSaveContent()
         {
-            var sb = new StringBuilder();
-            sb.Append(SyncListText);
-            sb.Append(DeleteListText);
-            sb.Append(DownloadWhenNotExistText);
-            return sb.ToString();
+            // 解析所有三個清單中的 Pack
+            var allPacks = new List<Pack>();
+
+            // 解析同步清單
+            if (!string.IsNullOrWhiteSpace(SyncListText))
+            {
+                var (syncPacks, _) = _deserializer.DeserializeFile(SyncListText);
+                allPacks.AddRange(syncPacks);
+            }
+
+            // 解析刪除清單
+            if (!string.IsNullOrWhiteSpace(DeleteListText))
+            {
+                var (deletePacks, _) = _deserializer.DeserializeFile(DeleteListText);
+                allPacks.AddRange(deletePacks);
+            }
+
+            // 解析不存在則添加清單
+            if (!string.IsNullOrWhiteSpace(DownloadWhenNotExistText))
+            {
+                var (downloadPacks, _) = _deserializer.DeserializeFile(DownloadWhenNotExistText);
+                allPacks.AddRange(downloadPacks);
+            }
+
+            // 取得當前版本號
+            var currentVersion =
+                Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "1.0.1.0";
+
+            // 使用序列化服務生成完整檔案
+            return _serializer.SerializeFile(allPacks, currentVersion);
+        }
+
+        partial void OnSelectedAuthModeChanged(DownloadAuthenticationMode value)
+        {
+            PersistAuthValue("DownloadAuthType", value.ToString());
+
+            switch (value)
+            {
+                case DownloadAuthenticationMode.None:
+                    ClearBasicCredentials();
+                    ClearBearerToken();
+                    ClearHeaderValues();
+                    ClearQueryValues();
+                    break;
+                case DownloadAuthenticationMode.Basic:
+                    ClearBearerToken();
+                    ClearHeaderValues();
+                    ClearQueryValues();
+                    break;
+                case DownloadAuthenticationMode.BearerToken:
+                    ClearBasicCredentials();
+                    ClearHeaderValues();
+                    ClearQueryValues();
+                    break;
+                case DownloadAuthenticationMode.ApiKeyHeader:
+                    ClearBasicCredentials();
+                    ClearBearerToken();
+                    ClearQueryValues();
+                    break;
+                case DownloadAuthenticationMode.ApiKeyQuery:
+                    ClearBasicCredentials();
+                    ClearBearerToken();
+                    ClearHeaderValues();
+                    break;
+            }
+
+            OnPropertyChanged(nameof(ShowBasicFields));
+            OnPropertyChanged(nameof(ShowBearerTokenField));
+            OnPropertyChanged(nameof(ShowHeaderFields));
+            OnPropertyChanged(nameof(ShowQueryFields));
+            OnPropertyChanged(nameof(ShowAuthDetails));
+        }
+
+        partial void OnAuthUsernameChanged(string value) =>
+            PersistAuthValue("DownloadAuthUsername", value);
+
+        partial void OnAuthPasswordChanged(string value) =>
+            PersistAuthValue("DownloadAuthPassword", value);
+
+        partial void OnAuthBearerTokenChanged(string value) =>
+            PersistAuthValue("DownloadAuthBearerToken", value);
+
+        partial void OnAuthHeaderNameChanged(string value) =>
+            PersistAuthValue("DownloadAuthHeaderName", value);
+
+        partial void OnAuthHeaderValueChanged(string value) =>
+            PersistAuthValue("DownloadAuthHeaderValue", value);
+
+        partial void OnAuthQueryNameChanged(string value) =>
+            PersistAuthValue("DownloadAuthQueryName", value);
+
+        partial void OnAuthQueryValueChanged(string value) =>
+            PersistAuthValue("DownloadAuthQueryValue", value);
+
+        private void PersistAuthValue(string key, string value)
+        {
+            if (_isInitializingAuth)
+            {
+                return;
+            }
+
+            _ini.IniWriteValue("Minecraft_updater", key, value ?? string.Empty);
+        }
+
+        private void ClearBasicCredentials()
+        {
+            if (!string.IsNullOrEmpty(AuthUsername))
+            {
+                AuthUsername = string.Empty;
+            }
+
+            if (!string.IsNullOrEmpty(AuthPassword))
+            {
+                AuthPassword = string.Empty;
+            }
+        }
+
+        private void ClearBearerToken()
+        {
+            if (!string.IsNullOrEmpty(AuthBearerToken))
+            {
+                AuthBearerToken = string.Empty;
+            }
+        }
+
+        private void ClearHeaderValues()
+        {
+            if (!string.IsNullOrEmpty(AuthHeaderName))
+            {
+                AuthHeaderName = string.Empty;
+            }
+
+            if (!string.IsNullOrEmpty(AuthHeaderValue))
+            {
+                AuthHeaderValue = string.Empty;
+            }
+        }
+
+        private void ClearQueryValues()
+        {
+            if (!string.IsNullOrEmpty(AuthQueryName))
+            {
+                AuthQueryName = string.Empty;
+            }
+
+            if (!string.IsNullOrEmpty(AuthQueryValue))
+            {
+                AuthQueryValue = string.Empty;
+            }
+        }
+
+        public bool IsManualCheckEnabled => !IsCheckingUpdates;
+
+        partial void OnIsCheckingUpdatesChanged(bool value) =>
+            OnPropertyChanged(nameof(IsManualCheckEnabled));
+
+        partial void OnIsSelfUpdateDisabledChanged(bool value)
+        {
+            if (_isInitializingPreferences)
+            {
+                return;
+            }
+
+            _updatePreferences.SetSelfUpdateDisabled(value);
+            AddLog(value ? "已停用自動更新檢查。" : "已啟用自動更新檢查。");
         }
     }
 }

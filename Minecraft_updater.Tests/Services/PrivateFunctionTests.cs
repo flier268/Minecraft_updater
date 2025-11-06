@@ -1,5 +1,9 @@
 using System;
 using System.IO;
+using System.Net;
+using System.Net.Sockets;
+using System.Security.Cryptography;
+using System.Text;
 using System.Threading.Tasks;
 using Xunit;
 using FluentAssertions;
@@ -32,59 +36,59 @@ namespace Minecraft_updater.Tests.Services
             }
         }
 
-        #region MD5 Tests
+        #region SHA256 Tests
 
         [Fact]
-        public void GetMD5_ValidFile_ShouldReturnCorrectMD5()
+        public void GetSHA256_ValidFile_ShouldReturnCorrectSHA256()
         {
             // Arrange
             var testFile = Path.Combine(_testDirectory, "test.txt");
             File.WriteAllText(testFile, "Hello World");
 
             // Act
-            var md5 = PrivateFunction.GetMD5(testFile);
+            var sha256 = PrivateFunction.GetSHA256(testFile);
 
             // Assert
-            md5.Should().NotBeNullOrEmpty();
-            md5.Should().HaveLength(32); // MD5 hash is 32 characters in hex
-            md5.Should().MatchRegex("^[A-F0-9]+$"); // Should be uppercase hex
+            sha256.Should().NotBeNullOrEmpty();
+            sha256.Should().HaveLength(64); // SHA256 hash is 64 characters in hex
+            sha256.Should().MatchRegex("^[a-f0-9]+$"); // Should be lowercase hex
         }
 
         [Fact]
-        public void GetMD5_EmptyFile_ShouldReturnMD5()
+        public void GetSHA256_EmptyFile_ShouldReturnSHA256()
         {
             // Arrange
             var testFile = Path.Combine(_testDirectory, "empty.txt");
             File.WriteAllText(testFile, "");
 
             // Act
-            var md5 = PrivateFunction.GetMD5(testFile);
+            var sha256 = PrivateFunction.GetSHA256(testFile);
 
             // Assert
-            md5.Should().NotBeNullOrEmpty();
-            md5.Should().Be("D41D8CD98F00B204E9800998ECF8427E"); // MD5 of empty string
+            sha256.Should().NotBeNullOrEmpty();
+            sha256.Should().Be("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"); // SHA256 of empty string
         }
 
         [Fact]
-        public void GetMD5_SameContent_ShouldReturnSameMD5()
+        public void GetSHA256_SameContent_ShouldReturnSameSHA256()
         {
             // Arrange
             var file1 = Path.Combine(_testDirectory, "file1.txt");
             var file2 = Path.Combine(_testDirectory, "file2.txt");
-            var content = "Test content for MD5";
+            var content = "Test content for SHA256";
             File.WriteAllText(file1, content);
             File.WriteAllText(file2, content);
 
             // Act
-            var md5_1 = PrivateFunction.GetMD5(file1);
-            var md5_2 = PrivateFunction.GetMD5(file2);
+            var sha256_1 = PrivateFunction.GetSHA256(file1);
+            var sha256_2 = PrivateFunction.GetSHA256(file2);
 
             // Assert
-            md5_1.Should().Be(md5_2);
+            sha256_1.Should().Be(sha256_2);
         }
 
         [Fact]
-        public void GetMD5_DifferentContent_ShouldReturnDifferentMD5()
+        public void GetSHA256_DifferentContent_ShouldReturnDifferentSHA256()
         {
             // Arrange
             var file1 = Path.Combine(_testDirectory, "file1.txt");
@@ -93,28 +97,28 @@ namespace Minecraft_updater.Tests.Services
             File.WriteAllText(file2, "Content B");
 
             // Act
-            var md5_1 = PrivateFunction.GetMD5(file1);
-            var md5_2 = PrivateFunction.GetMD5(file2);
+            var sha256_1 = PrivateFunction.GetSHA256(file1);
+            var sha256_2 = PrivateFunction.GetSHA256(file2);
 
             // Assert
-            md5_1.Should().NotBe(md5_2);
+            sha256_1.Should().NotBe(sha256_2);
         }
 
         [Fact]
-        public void GetMD5_NonExistentFile_ShouldThrow()
+        public void GetSHA256_NonExistentFile_ShouldThrow()
         {
             // Arrange
             var nonExistentFile = Path.Combine(_testDirectory, "nonexistent.txt");
 
             // Act
-            Action act = () => PrivateFunction.GetMD5(nonExistentFile);
+            Action act = () => PrivateFunction.GetSHA256(nonExistentFile);
 
             // Assert
             act.Should().Throw<FileNotFoundException>();
         }
 
         [Fact]
-        public void GetMD5_BinaryFile_ShouldReturnMD5()
+        public void GetSHA256_BinaryFile_ShouldReturnSHA256()
         {
             // Arrange
             var binaryFile = Path.Combine(_testDirectory, "binary.dat");
@@ -122,11 +126,11 @@ namespace Minecraft_updater.Tests.Services
             File.WriteAllBytes(binaryFile, binaryData);
 
             // Act
-            var md5 = PrivateFunction.GetMD5(binaryFile);
+            var sha256 = PrivateFunction.GetSHA256(binaryFile);
 
             // Assert
-            md5.Should().NotBeNullOrEmpty();
-            md5.Should().HaveLength(32);
+            sha256.Should().NotBeNullOrEmpty();
+            sha256.Should().HaveLength(64);
         }
 
         #endregion
@@ -260,25 +264,66 @@ namespace Minecraft_updater.Tests.Services
         }
 
         [Fact]
-        public async Task DownloadFileAsync_ExistingFile_ShouldDeleteOldFile()
+        public async Task DownloadFileAsync_ExistingFile_ShouldNotRemoveFileOnFailure()
         {
             // Arrange
             var targetPath = Path.Combine(_testDirectory, "existing.txt");
             File.WriteAllText(targetPath, "Old content");
-            var originalCreationTime = File.GetCreationTime(targetPath);
+            var originalContent = File.ReadAllText(targetPath);
 
-            // Wait a bit to ensure time difference
-            await Task.Delay(10);
+            // Act - Try to download (will fail but should keep old file)
+            var result = await PrivateFunction.DownloadFileAsync(
+                "http://invalid.url/file.txt",
+                targetPath
+            );
 
-            // Act - Try to download (will fail but should delete old file first)
-            await PrivateFunction.DownloadFileAsync("http://invalid.url/file.txt", targetPath);
+            // Assert - Download should fail but existing file must remain untouched
+            result.Should().BeFalse();
+            File.Exists(targetPath).Should().BeTrue();
+            File.ReadAllText(targetPath).Should().Be(originalContent);
+        }
 
-            // Assert - Old file should have been deleted (new attempt was made)
-            // Note: File might not exist if download failed, which is expected
-            if (File.Exists(targetPath))
-            {
-                File.GetCreationTime(targetPath).Should().NotBe(originalCreationTime);
-            }
+        [Fact]
+        public async Task DownloadFileAsync_WhenHashMatches_ShouldReplaceFile()
+        {
+            // Arrange
+            var targetPath = Path.Combine(_testDirectory, "hash-success.txt");
+            File.WriteAllText(targetPath, "Old content");
+            const string downloadContent = "New hashed content";
+            var expectedHash = ComputeSha256(downloadContent);
+            var (url, serverTask) = StartSingleUseHttpServer(downloadContent);
+
+            // Act
+            var result = await PrivateFunction.DownloadFileAsync(url, targetPath, null, expectedHash);
+            await serverTask;
+
+            // Assert
+            result.Should().BeTrue();
+            File.ReadAllText(targetPath).Should().Be(downloadContent);
+        }
+
+        [Fact]
+        public async Task DownloadFileAsync_WhenHashMismatch_ShouldKeepOriginalFile()
+        {
+            // Arrange
+            var targetPath = Path.Combine(_testDirectory, "hash-mismatch.txt");
+            const string originalContent = "Original file content";
+            File.WriteAllText(targetPath, originalContent);
+            const string downloadContent = "Downloaded but invalid";
+            var (url, serverTask) = StartSingleUseHttpServer(downloadContent);
+
+            // Act
+            var result = await PrivateFunction.DownloadFileAsync(
+                url,
+                targetPath,
+                null,
+                new string('0', 64)
+            );
+            await serverTask;
+
+            // Assert
+            result.Should().BeFalse();
+            File.ReadAllText(targetPath).Should().Be(originalContent);
         }
 
         [Fact]
@@ -317,6 +362,59 @@ namespace Minecraft_updater.Tests.Services
 
             // Assert
             await act.Should().NotThrowAsync();
+        }
+
+        #endregion
+
+        #region Helpers
+
+        private static (string Url, Task ServerTask) StartSingleUseHttpServer(string responseContent)
+        {
+            var listener = new TcpListener(IPAddress.Loopback, 0);
+            listener.Start();
+            var port = ((IPEndPoint)listener.LocalEndpoint).Port;
+
+            var serverTask = Task.Run(async () =>
+            {
+                try
+                {
+                    using var client = await listener.AcceptTcpClientAsync();
+                    await using var stream = client.GetStream();
+                    using var reader = new StreamReader(stream, Encoding.ASCII, leaveOpen: true);
+
+                    while (!string.IsNullOrEmpty(await reader.ReadLineAsync()))
+                    {
+                    }
+
+                    var bodyBytes = Encoding.UTF8.GetBytes(responseContent);
+                    var header =
+                        $"HTTP/1.1 200 OK\r\nContent-Length: {bodyBytes.Length}\r\nContent-Type: text/plain\r\nConnection: close\r\n\r\n";
+                    var headerBytes = Encoding.ASCII.GetBytes(header);
+
+                    await stream.WriteAsync(headerBytes, 0, headerBytes.Length);
+                    await stream.WriteAsync(bodyBytes, 0, bodyBytes.Length);
+                    await stream.FlushAsync();
+                }
+                finally
+                {
+                    listener.Stop();
+                }
+            });
+
+            return ($"http://127.0.0.1:{port}/", serverTask);
+        }
+
+        private static string ComputeSha256(string content)
+        {
+            using var sha = SHA256.Create();
+            var hashBytes = sha.ComputeHash(Encoding.UTF8.GetBytes(content));
+            var sb = new StringBuilder(hashBytes.Length * 2);
+            foreach (var b in hashBytes)
+            {
+                sb.Append(b.ToString("x2"));
+            }
+
+            return sb.ToString();
         }
 
         #endregion

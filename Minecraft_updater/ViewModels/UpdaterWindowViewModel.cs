@@ -11,6 +11,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using Minecraft_updater.Models;
 using Minecraft_updater.Services;
 
@@ -22,6 +23,10 @@ namespace Minecraft_updater.ViewModels
         private readonly string _appPath;
         private readonly string _url;
         private readonly bool _autoCloseAfterFinished;
+        private readonly PackDeserializerService _deserializer;
+        private readonly DownloadAuthenticationOptions _downloadAuthOptions;
+        private readonly UpdatePreferencesService _updatePreferences;
+        private bool _isInitializingPreferences = true;
 
         [ObservableProperty]
         private int _progressMax = 100;
@@ -38,23 +43,47 @@ namespace Minecraft_updater.ViewModels
         [ObservableProperty]
         private ObservableCollection<string> _logMessages = new();
 
+        [ObservableProperty]
+        private bool _isSelfUpdateDisabled;
+
+        [ObservableProperty]
+        private bool _isCheckingUpdates;
+
+        [ObservableProperty]
+        private string _applicationVersion = "Unknown";
+
         public event EventHandler? SyncCompleted;
 
         public UpdaterWindowViewModel()
         {
             _appPath = AppContext.BaseDirectory;
-            var configPath = Path.Combine(_appPath, "config.ini");
+            var configPath = !string.IsNullOrWhiteSpace(App.ConfigPath)
+                ? App.ConfigPath
+                : Path.Combine(_appPath, Services.ConfigurationPathResolver.DefaultFileName);
             _ini = new IniFile(configPath);
+            _deserializer = new PackDeserializerService();
+            _updatePreferences = new UpdatePreferencesService(_ini);
 
             _url = _ini.IniReadValue("Minecraft_updater", "scUrl");
             _autoCloseAfterFinished =
                 _ini.IniReadValue("Minecraft_updater", "AutoClose_AfterFinishd").ToLower()
                 == "true";
             Log.LogFile = _ini.IniReadValue("Minecraft_updater", "LogFile").ToLower() == "true";
+            _downloadAuthOptions = DownloadAuthenticationOptions.FromIni(_ini);
+            IsSelfUpdateDisabled = _updatePreferences.IsSelfUpdateDisabled;
+            if (IsSelfUpdateDisabled)
+            {
+                UpdateInfoText = "自動更新檢查已停用";
+            }
+            _isInitializingPreferences = false;
 
             var version =
                 Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "Unknown";
-            UpdateInfoText = $"Minecraft updater v{version}";
+            ApplicationVersion = version;
+            if (!IsSelfUpdateDisabled)
+            {
+                UpdateInfoText = $"Minecraft updater v{version}";
+            }
         }
 
         public async Task InitializeAsync()
@@ -66,12 +95,32 @@ namespace Minecraft_updater.ViewModels
             await CheckPackAsync();
         }
 
-        private async Task CheckSelfUpdateAsync()
+        [RelayCommand]
+        private async Task ManualCheckUpdateAsync() => await CheckSelfUpdateAsync(force: true);
+
+        private async Task CheckSelfUpdateAsync(bool force = false)
         {
-            AddLog("檢查Minecraft updater是否有更新...");
+            if (IsCheckingUpdates)
+            {
+                AddLog("更新檢查正在進行中，請稍候...");
+                return;
+            }
+
+            if (!force && IsSelfUpdateDisabled)
+            {
+                AddLog("自動更新檢查已停用");
+                UpdateInfoText = "自動更新檢查已停用";
+                return;
+            }
+
+            AddLog(
+                force ? "手動檢查Minecraft updater更新..." : "檢查Minecraft updater是否有更新..."
+            );
 
             try
             {
+                IsCheckingUpdates = true;
+
                 // 刪除舊的臨時檔案
                 var filename = Environment.GetCommandLineArgs()[0] ?? "";
                 var tempFilename =
@@ -86,11 +135,26 @@ namespace Minecraft_updater.ViewModels
                 var updateMessage = await UpdateService.CheckUpdateAsync();
                 if (updateMessage.HaveUpdate)
                 {
+                    var skippedVersion = _updatePreferences.SkippedVersion;
+                    if (
+                        !force
+                        && !string.IsNullOrEmpty(skippedVersion)
+                        && string.Equals(
+                            skippedVersion,
+                            updateMessage.NewstVersion,
+                            StringComparison.OrdinalIgnoreCase
+                        )
+                    )
+                    {
+                        AddLog($"已設定略過版本 {updateMessage.NewstVersion}，此次不提示。");
+                        return;
+                    }
+
                     // 需要在 UI 執行緒中顯示更新視窗
                     await Dispatcher.UIThread.InvokeAsync(async () =>
                     {
                         var updateWindow = new Views.UpdateSelfWindow(
-                            new UpdateSelfWindowViewModel(updateMessage)
+                            new UpdateSelfWindowViewModel(updateMessage, _updatePreferences, force)
                         );
                         if (
                             Avalonia.Application.Current?.ApplicationLifetime
@@ -99,32 +163,51 @@ namespace Minecraft_updater.ViewModels
                         )
                         {
                             await updateWindow.ShowDialog(desktop.MainWindow);
+                            IsSelfUpdateDisabled = _updatePreferences.IsSelfUpdateDisabled;
                         }
                     });
                 }
                 else
                 {
                     UpdateInfoText = "已經是最新版本";
+                    if (force)
+                    {
+                        AddLog("已經是最新版本。");
+                    }
                 }
             }
             catch (Exception ex)
             {
                 AddLog($"檢查更新失敗: {ex.Message}", "#FF0000");
             }
+            finally
+            {
+                IsCheckingUpdates = false;
+            }
         }
 
         private async Task CheckPackAsync()
         {
-            var list = new List<Pack>();
+            List<Pack> list;
+            string? minimumVersion;
 
             // 下載清單
             var tempFile = PrivateFunction.CreateTmpFile();
-            AddLog($"從 {_url} 下載Minecraft的Mod清單...");
 
             try
             {
                 using var httpClient = new HttpClient();
-                var response = await httpClient.GetAsync(_url);
+                using var request = HttpAuthenticationHelper.CreateAuthenticatedGetRequest(
+                    _url,
+                    _downloadAuthOptions
+                );
+                var sanitizedUrl = HttpAuthenticationHelper.GetSanitizedUrlForLogging(
+                    request.RequestUri,
+                    _downloadAuthOptions
+                );
+                AddLog($"從 {sanitizedUrl} 下載Minecraft的Mod清單...");
+
+                var response = await httpClient.SendAsync(request);
                 response.EnsureSuccessStatusCode();
 
                 var content = await response.Content.ReadAsStringAsync();
@@ -132,14 +215,55 @@ namespace Minecraft_updater.ViewModels
 
                 // 解析清單
                 AddLog("解析中...");
-                using var reader = new StreamReader(tempFile, Encoding.UTF8);
-                while (!reader.EndOfStream)
+                var fileContent = await File.ReadAllTextAsync(tempFile, Encoding.UTF8);
+                (list, minimumVersion) = _deserializer.DeserializeFile(fileContent);
+
+                if (minimumVersion != null)
                 {
-                    var line = await reader.ReadLineAsync();
-                    if (!string.IsNullOrWhiteSpace(line))
+                    AddLog($"檔案要求最低版本: {minimumVersion}");
+                }
+
+                // 檢查版本號是否符合要求
+                var currentVersion =
+                    Assembly.GetExecutingAssembly().GetName().Version ?? new Version("1.0.1.0");
+
+                Version requiredVersion;
+                if (string.IsNullOrEmpty(minimumVersion))
+                {
+                    // 如果沒有指定最低版本，使用預設值 1.0.1.0
+                    requiredVersion = new Version("1.0.1.0");
+                    AddLog("檔案未指定最低版本要求，使用預設值 1.0.1.0");
+                }
+                else
+                {
+                    // 有指定版本號，嘗試解析
+                    if (!Version.TryParse(minimumVersion, out requiredVersion!))
                     {
-                        list.Add(Packs.Resolve(line));
+                        requiredVersion = new Version("1.0.1.0");
+                        AddLog(
+                            $"無法解析最低版本號 '{minimumVersion}'，使用預設值 1.0.1.0",
+                            "#FFA500"
+                        );
                     }
+                    else
+                    {
+                        AddLog($"檔案要求最低版本: {minimumVersion}");
+                    }
+                }
+
+                // 檢查當前版本是否符合要求
+                if (currentVersion < requiredVersion)
+                {
+                    AddLog(
+                        $"版本不符合要求！目前版本: {currentVersion}，需要版本: {requiredVersion}",
+                        "#FF0000"
+                    );
+                    AddLog("請更新 Minecraft updater 到最新版本", "#FF0000");
+                    return;
+                }
+                else
+                {
+                    AddLog($"版本檢查通過（目前版本: {currentVersion}）", "#00FF00");
                 }
             }
             catch (HttpRequestException ex)
@@ -193,7 +317,7 @@ namespace Minecraft_updater.ViewModels
 
                     foreach (var file in matchedFiles)
                     {
-                        if (PrivateFunction.GetMD5(file) != item.MD5)
+                        if (PrivateFunction.GetSHA256(file) != item.SHA256)
                         {
                             try
                             {
@@ -218,6 +342,42 @@ namespace Minecraft_updater.ViewModels
                     }
                 }
 
+                // 處理僅在缺少時下載的檔案
+                var downloadWhenMissingList = list.Where(x => !x.Delete && x.DownloadWhenNotExist)
+                    .ToList();
+
+                foreach (var item in downloadWhenMissingList)
+                {
+                    var filePath = Path.Combine(_appPath, item.Path);
+                    if (File.Exists(filePath))
+                    {
+                        AddLog($"{Path.GetFileName(item.Path)} 已存在，跳過下載");
+                    }
+                    else
+                    {
+                        AddLog($"{Path.GetFileName(item.Path)} 不存在，開始下載");
+                        var success = await PrivateFunction.DownloadFileAsync(
+                            item.URL,
+                            filePath,
+                            (msg) => AddLog(msg),
+                            item.SHA256,
+                            _downloadAuthOptions
+                        );
+
+                        if (success)
+                        {
+                            AddLog($"{Path.GetFileName(item.Path)} 下載完成");
+                        }
+                        else
+                        {
+                            AddLog($"{Path.GetFileName(item.Path)} 下載失敗", "#FF0000");
+                        }
+                    }
+
+                    haveUpdate++;
+                    UpdateProgress(haveUpdate, totalCount);
+                }
+
                 // 新增/取代檔案
                 var updateList = list.Where(x => !x.Delete && !x.DownloadWhenNotExist).ToList();
                 foreach (var item in updateList)
@@ -229,7 +389,7 @@ namespace Minecraft_updater.ViewModels
                     {
                         if (
                             !item.DownloadWhenNotExist
-                            && PrivateFunction.GetMD5(filePath) != item.MD5
+                            && PrivateFunction.GetSHA256(filePath) != item.SHA256
                         )
                         {
                             needUpdate = true;
@@ -246,7 +406,9 @@ namespace Minecraft_updater.ViewModels
                         var success = await PrivateFunction.DownloadFileAsync(
                             item.URL,
                             filePath,
-                            (msg) => AddLog(msg)
+                            (msg) => AddLog(msg),
+                            item.SHA256,
+                            _downloadAuthOptions
                         );
 
                         if (success)
@@ -312,6 +474,31 @@ namespace Minecraft_updater.ViewModels
         private void UpdateProgressText(int current, int total)
         {
             ProgressText = $"目前進度：{current}/{total}";
+        }
+
+        public bool IsManualCheckEnabled => !IsCheckingUpdates;
+
+        partial void OnIsCheckingUpdatesChanged(bool value) =>
+            OnPropertyChanged(nameof(IsManualCheckEnabled));
+
+        partial void OnIsSelfUpdateDisabledChanged(bool value)
+        {
+            if (_isInitializingPreferences)
+            {
+                return;
+            }
+
+            _updatePreferences.SetSelfUpdateDisabled(value);
+            if (value)
+            {
+                AddLog("已停用自動更新檢查。");
+                UpdateInfoText = "自動更新檢查已停用";
+            }
+            else
+            {
+                AddLog("已啟用自動更新檢查。");
+                UpdateInfoText = $"Minecraft updater v{ApplicationVersion}";
+            }
         }
     }
 }
