@@ -72,7 +72,8 @@ public partial class App : Application
                             return;
                         }
 
-                        var updateMessage = await Services.UpdateService.CheckUpdateAsync();
+                        var updateMessage =
+                            await Services.CheckCheckUpdateService.CheckUpdateAsync();
                         if (updateMessage.HaveUpdate)
                         {
                             var skippedVersion = preferences.SkippedVersion;

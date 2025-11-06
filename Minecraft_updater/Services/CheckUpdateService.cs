@@ -11,7 +11,7 @@ using Minecraft_updater.Models;
 
 namespace Minecraft_updater.Services
 {
-    public class UpdateService
+    public class CheckCheckUpdateService
     {
         private const string GitHubApiUrl =
             "https://api.github.com/repos/flier268/Minecraft_updater/releases/latest";

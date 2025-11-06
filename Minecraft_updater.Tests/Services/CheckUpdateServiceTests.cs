@@ -8,7 +8,7 @@ using Minecraft_updater.Models;
 
 namespace Minecraft_updater.Tests.Services
 {
-    public class UpdateServiceTests
+    public class CheckUpdateServiceTests
     {
         #region CheckUpdateAsync 基礎測試
 
@@ -16,7 +16,7 @@ namespace Minecraft_updater.Tests.Services
         public async Task CheckUpdateAsync_ShouldReturnUpdateMessage()
         {
             // Act
-            var result = await UpdateService.CheckUpdateAsync();
+            var result = await CheckCheckUpdateService.CheckUpdateAsync();
 
             // Assert
             result.Should().NotBeNull();
@@ -27,7 +27,7 @@ namespace Minecraft_updater.Tests.Services
         public async Task CheckUpdateAsync_ShouldInitializeAllProperties()
         {
             // Act
-            var result = await UpdateService.CheckUpdateAsync();
+            var result = await CheckCheckUpdateService.CheckUpdateAsync();
 
             // Assert - 所有屬性都應該被初始化（非 null）
             result.Should().NotBeNull();
@@ -40,7 +40,7 @@ namespace Minecraft_updater.Tests.Services
         public async Task CheckUpdateAsync_HaveUpdateProperty_ShouldBeBoolean()
         {
             // Act
-            var result = await UpdateService.CheckUpdateAsync();
+            var result = await CheckCheckUpdateService.CheckUpdateAsync();
 
             // Assert - HaveUpdate 應該是有效的布林值
             (result.HaveUpdate == true || result.HaveUpdate == false).Should().BeTrue();
@@ -56,7 +56,7 @@ namespace Minecraft_updater.Tests.Services
             // Arrange - 假設當前版本等於或高於最新版本
 
             // Act
-            var result = await UpdateService.CheckUpdateAsync();
+            var result = await CheckCheckUpdateService.CheckUpdateAsync();
 
             // Assert - 如果沒有更新，HaveUpdate 應該是 false
             if (!result.HaveUpdate)
@@ -69,7 +69,7 @@ namespace Minecraft_updater.Tests.Services
         public async Task CheckUpdateAsync_WhenUpdateAvailable_ShouldPopulateVersionInfo()
         {
             // Act
-            var result = await UpdateService.CheckUpdateAsync();
+            var result = await CheckCheckUpdateService.CheckUpdateAsync();
 
             // Assert - 如果有更新，版本資訊應該被填充
             if (result.HaveUpdate)
@@ -86,7 +86,7 @@ namespace Minecraft_updater.Tests.Services
         public async Task CheckUpdateAsync_WhenUpdateAvailable_ShouldPopulateDownloadUrl()
         {
             // Act
-            var result = await UpdateService.CheckUpdateAsync();
+            var result = await CheckCheckUpdateService.CheckUpdateAsync();
 
             // Assert - 如果有更新，下載 URL 應該被填充
             if (result.HaveUpdate)
@@ -103,7 +103,7 @@ namespace Minecraft_updater.Tests.Services
         public async Task CheckUpdateAsync_WhenUpdateAvailable_MayIncludeReleaseNotes()
         {
             // Act
-            var result = await UpdateService.CheckUpdateAsync();
+            var result = await CheckCheckUpdateService.CheckUpdateAsync();
 
             // Assert - 如果有更新，可能包含 Release Notes
             if (result.HaveUpdate)
@@ -130,7 +130,7 @@ namespace Minecraft_updater.Tests.Services
         )
         {
             // Act
-            var parsed = UpdateService.TryParseReleaseVersion(
+            var parsed = CheckCheckUpdateService.TryParseReleaseVersion(
                 tag,
                 out var version,
                 out var display
@@ -146,7 +146,7 @@ namespace Minecraft_updater.Tests.Services
         public void TryParseReleaseVersion_ShouldReturnFalseForInvalidTag()
         {
             // Act
-            var parsed = UpdateService.TryParseReleaseVersion(
+            var parsed = CheckCheckUpdateService.TryParseReleaseVersion(
                 "invalid-tag",
                 out var version,
                 out var display
@@ -166,7 +166,7 @@ namespace Minecraft_updater.Tests.Services
         public async Task CheckUpdateAsync_OnNetworkError_ShouldReturnDefaultUpdateMessage()
         {
             // Act - 即使網路失敗也應該返回有效的 UpdateMessage
-            var result = await UpdateService.CheckUpdateAsync();
+            var result = await CheckCheckUpdateService.CheckUpdateAsync();
 
             // Assert - 即使發生錯誤，也應返回有效的 UpdateMessage 物件
             result.Should().NotBeNull();
@@ -179,7 +179,7 @@ namespace Minecraft_updater.Tests.Services
         public async Task CheckUpdateAsync_OnException_ShouldNotThrow()
         {
             // Act & Assert - 不應該拋出異常
-            Func<Task> act = async () => await UpdateService.CheckUpdateAsync();
+            Func<Task> act = async () => await CheckCheckUpdateService.CheckUpdateAsync();
             await act.Should().NotThrowAsync();
         }
 
@@ -191,8 +191,8 @@ namespace Minecraft_updater.Tests.Services
         public async Task CheckUpdateAsync_MultipleCallsShouldWork()
         {
             // Act - 多次呼叫
-            var result1 = await UpdateService.CheckUpdateAsync();
-            var result2 = await UpdateService.CheckUpdateAsync();
+            var result1 = await CheckCheckUpdateService.CheckUpdateAsync();
+            var result2 = await CheckCheckUpdateService.CheckUpdateAsync();
 
             // Assert - 兩次呼叫都應該返回有效結果
             result1.Should().NotBeNull();
@@ -206,7 +206,7 @@ namespace Minecraft_updater.Tests.Services
             var tasks = new Task<UpdateMessage>[5];
             for (int i = 0; i < 5; i++)
             {
-                tasks[i] = UpdateService.CheckUpdateAsync();
+                tasks[i] = CheckCheckUpdateService.CheckUpdateAsync();
             }
             var results = await Task.WhenAll(tasks);
 
@@ -223,9 +223,9 @@ namespace Minecraft_updater.Tests.Services
         public async Task CheckUpdateAsync_ConsecutiveCalls_ShouldReturnConsistentResults()
         {
             // Act - 連續兩次呼叫
-            var result1 = await UpdateService.CheckUpdateAsync();
+            var result1 = await CheckCheckUpdateService.CheckUpdateAsync();
             await Task.Delay(100); // 短暫延遲
-            var result2 = await UpdateService.CheckUpdateAsync();
+            var result2 = await CheckCheckUpdateService.CheckUpdateAsync();
 
             // Assert - 結果應該一致（版本號不會在短時間內改變）
             result1.HaveUpdate.Should().Be(result2.HaveUpdate);
@@ -243,10 +243,10 @@ namespace Minecraft_updater.Tests.Services
         public async Task CheckUpdateAsync_ShouldFindPlatformSpecificAsset()
         {
             // 測試重點：驗證從 GitHub Release assets 中找到正確平台的下載 URL
-            // 對應程式碼：UpdateService.cs:74-98
+            // 對應程式碼：CheckUpdateService.cs:74-98
 
             // Act
-            var result = await UpdateService.CheckUpdateAsync();
+            var result = await CheckCheckUpdateService.CheckUpdateAsync();
 
             // Assert - 如果有更新且找到下載 URL，應該包含平台標識
             if (result.HaveUpdate && !string.IsNullOrEmpty(result.SHA1))
@@ -278,10 +278,10 @@ namespace Minecraft_updater.Tests.Services
         public async Task CheckUpdateAsync_WhenUpdateAvailable_SHA1ShouldBeUrlOrEmpty()
         {
             // 測試重點：SHA1 欄位只能是 URL 或空字串
-            // 對應程式碼：UpdateService.cs:93 和 UpdateService.cs:103
+            // 對應程式碼：CheckUpdateService.cs:93 和 CheckUpdateService.cs:103
 
             // Act
-            var result = await UpdateService.CheckUpdateAsync();
+            var result = await CheckCheckUpdateService.CheckUpdateAsync();
 
             // Assert
             result.SHA1.Should().NotBeNull();
@@ -302,11 +302,11 @@ namespace Minecraft_updater.Tests.Services
         public async Task CheckUpdateAsync_WhenNoAssetFound_SHA1ShouldBeEmpty()
         {
             // 測試重點：如果找不到對應平台的 asset，SHA1 應該是空字串
-            // 對應程式碼：UpdateService.cs:101-104
+            // 對應程式碼：CheckUpdateService.cs:101-104
             // 注意：這是整合測試，實際結果取決於 GitHub Release 的內容
 
             // Act
-            var result = await UpdateService.CheckUpdateAsync();
+            var result = await CheckCheckUpdateService.CheckUpdateAsync();
 
             // Assert
             if (result.HaveUpdate)
@@ -326,10 +326,10 @@ namespace Minecraft_updater.Tests.Services
         public async Task CheckUpdateAsync_AssetUrlShouldBeBrowserDownloadUrl()
         {
             // 測試重點：驗證取得的是 browser_download_url 而非其他 URL
-            // 對應程式碼：UpdateService.cs:86-95
+            // 對應程式碼：CheckUpdateService.cs:86-95
 
             // Act
-            var result = await UpdateService.CheckUpdateAsync();
+            var result = await CheckCheckUpdateService.CheckUpdateAsync();
 
             // Assert
             if (result.HaveUpdate && !string.IsNullOrEmpty(result.SHA1))
@@ -343,10 +343,10 @@ namespace Minecraft_updater.Tests.Services
         public async Task CheckUpdateAsync_WhenPlatformAssetExists_ShouldNotBeEmpty()
         {
             // 測試重點：當 Release 有對應平台的 asset 時，應該能找到
-            // 對應程式碼：UpdateService.cs:74-98
+            // 對應程式碼：CheckUpdateService.cs:74-98
 
             // Act
-            var result = await UpdateService.CheckUpdateAsync();
+            var result = await CheckCheckUpdateService.CheckUpdateAsync();
 
             // Assert
             if (result.HaveUpdate)
@@ -369,7 +369,7 @@ namespace Minecraft_updater.Tests.Services
         public void CheckUpdate_SyncVersion_ShouldReturnUpdateMessage()
         {
             // Act
-            var result = UpdateService.CheckUpdate();
+            var result = CheckCheckUpdateService.CheckUpdate();
 
             // Assert
             result.Should().NotBeNull();
@@ -380,7 +380,7 @@ namespace Minecraft_updater.Tests.Services
         public void CheckUpdate_ShouldBeSynchronousWrapperOfAsync()
         {
             // Act
-            var syncResult = UpdateService.CheckUpdate();
+            var syncResult = CheckCheckUpdateService.CheckUpdate();
 
             // Assert - 應該返回 UpdateMessage 物件
             syncResult.Should().NotBeNull();
@@ -390,7 +390,7 @@ namespace Minecraft_updater.Tests.Services
         public void CheckUpdate_ShouldNotThrow()
         {
             // Act & Assert
-            Action act = () => UpdateService.CheckUpdate();
+            Action act = () => CheckCheckUpdateService.CheckUpdate();
             act.Should().NotThrow();
         }
 
@@ -405,7 +405,7 @@ namespace Minecraft_updater.Tests.Services
             // 在 CI/CD 環境中可能需要網路連線
 
             // Act
-            var result = await UpdateService.CheckUpdateAsync();
+            var result = await CheckCheckUpdateService.CheckUpdateAsync();
 
             // Assert - 應該能成功取得回應（無論是否有更新）
             result.Should().NotBeNull();

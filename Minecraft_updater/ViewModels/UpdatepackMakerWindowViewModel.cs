@@ -194,9 +194,9 @@ namespace Minecraft_updater.ViewModels
             {
                 IsCheckingUpdates = true;
 
-                UpdateService.Cleanup();
+                CheckCheckUpdateService.Cleanup();
 
-                var updateMessage = await UpdateService.CheckUpdateAsync();
+                var updateMessage = await CheckCheckUpdateService.CheckUpdateAsync();
                 if (updateMessage.HaveUpdate)
                 {
                     var skippedVersion = _updatePreferences.SkippedVersion;
