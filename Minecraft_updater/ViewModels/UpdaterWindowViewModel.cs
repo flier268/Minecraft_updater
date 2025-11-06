@@ -121,7 +121,7 @@ namespace Minecraft_updater.ViewModels
             {
                 IsCheckingUpdates = true;
 
-                CheckCheckUpdateService.Cleanup();
+                UpdateSelfService.Cleanup();
 
                 var updateMessage = await CheckCheckUpdateService.CheckUpdateAsync();
                 if (updateMessage.HaveUpdate)

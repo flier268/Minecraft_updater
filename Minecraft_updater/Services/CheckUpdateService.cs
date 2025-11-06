@@ -193,53 +193,6 @@ namespace Minecraft_updater.Services
             return CheckUpdateAsync().GetAwaiter().GetResult();
         }
 
-        public static void Cleanup()
-        {
-            var filename = GetExecutingFilePath();
-            var tempFilename =
-                Path.GetFileNameWithoutExtension(filename) + ".temp" + Path.GetExtension(filename);
-            if (File.Exists(tempFilename))
-            {
-                File.Delete(tempFilename);
-            }
-        }
-
-        public static string GetExecutingFilePath()
-        {
-            const string debuggingProcessPath = "/usr/share/dotnet/dotnet";
-            if (
-                Environment.ProcessPath is not null
-                && Environment.ProcessPath != debuggingProcessPath
-            )
-            {
-                return Environment.ProcessPath;
-            }
-            var fileNameFromProcess = Process.GetCurrentProcess().MainModule?.FileName;
-            if (fileNameFromProcess is not null && fileNameFromProcess != debuggingProcessPath)
-            {
-                return fileNameFromProcess;
-            }
-            if (System.OperatingSystem.IsWindows())
-            {
-                if (
-                    Environment
-                        .GetCommandLineArgs()[0]
-                        .EndsWith(".exe", StringComparison.OrdinalIgnoreCase)
-                )
-                {
-                    return Environment.GetCommandLineArgs()[0];
-                }
-                else
-                {
-                    return Path.ChangeExtension(Environment.GetCommandLineArgs()[0], ".exe");
-                }
-            }
-            else
-            {
-                return Environment.GetCommandLineArgs()[0];
-            }
-        }
-
         /// <summary>
         /// 根據當前作業系統取得對應的資產名稱
         /// </summary>
