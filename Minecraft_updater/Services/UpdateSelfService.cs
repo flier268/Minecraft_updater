@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Net.Http;
@@ -23,11 +24,33 @@ namespace Minecraft_updater.Services
                 throw new Exception("無法取得執行檔路徑");
             }
 
-            var tempFilename =
-                Path.GetFileNameWithoutExtension(filename) + ".temp" + Path.GetExtension(filename);
+            var executableDir = Path.GetDirectoryName(filename);
+            if (string.IsNullOrEmpty(executableDir))
+            {
+                throw new Exception("無法取得執行檔所在目錄");
+            }
 
-            // 備份當前檔案
-            File.Move(filename, tempFilename, true);
+            var renamedFiles = new List<(string Original, string Temp)>();
+
+            void RenameIfExists(string path)
+            {
+                if (!File.Exists(path))
+                {
+                    return;
+                }
+
+                var tempPath = GetTempFilePath(path);
+                File.Move(path, tempPath, true);
+                renamedFiles.Add((path, tempPath));
+            }
+
+            // 備份當前檔案與依賴的原生函式庫
+            RenameIfExists(filename);
+            foreach (var dependency in AvaloniaDependencyLibNames)
+            {
+                var dependencyPath = Path.Combine(executableDir, dependency);
+                RenameIfExists(dependencyPath);
+            }
 
             try
             {
@@ -53,13 +76,6 @@ namespace Minecraft_updater.Services
                     $"Minecraft_updater_update_{Guid.NewGuid()}"
                 );
                 System.IO.Compression.ZipFile.ExtractToDirectory(tempZipPath, tempExtractPath);
-
-                // 獲取執行檔所在的目錄
-                var executableDir = Path.GetDirectoryName(filename);
-                if (string.IsNullOrEmpty(executableDir))
-                {
-                    throw new Exception("無法取得執行檔所在目錄");
-                }
 
                 // 尋找解壓縮後包含執行檔的目錄
                 var executableName = Path.GetFileName(filename);
@@ -91,11 +107,26 @@ namespace Minecraft_updater.Services
             catch
             {
                 // 如果更新失敗，恢復舊版本
-                if (File.Exists(filename))
+                for (var index = renamedFiles.Count - 1; index >= 0; index--)
                 {
-                    File.Delete(filename);
+                    var (original, temp) = renamedFiles[index];
+                    try
+                    {
+                        if (File.Exists(original))
+                        {
+                            File.Delete(original);
+                        }
+
+                        if (File.Exists(temp))
+                        {
+                            File.Move(temp, original, true);
+                        }
+                    }
+                    catch
+                    {
+                        // 嘗試恢復所有檔案，即使其中一個失敗也繼續
+                    }
                 }
-                File.Move(tempFilename, filename);
                 throw;
             }
         }
@@ -103,11 +134,25 @@ namespace Minecraft_updater.Services
         public static void Cleanup()
         {
             var filename = GetExecutingFilePath();
-            var tempFilename =
-                Path.GetFileNameWithoutExtension(filename) + ".temp" + Path.GetExtension(filename);
+            var tempFilename = GetTempFilePath(filename);
             if (File.Exists(tempFilename))
             {
                 File.Delete(tempFilename);
+            }
+
+            var executableDir = Path.GetDirectoryName(filename);
+            if (string.IsNullOrEmpty(executableDir))
+            {
+                return;
+            }
+
+            foreach (var dependency in AvaloniaDependencyLibNames)
+            {
+                var tempDependencyPath = GetTempFilePath(Path.Combine(executableDir, dependency));
+                if (File.Exists(tempDependencyPath))
+                {
+                    File.Delete(tempDependencyPath);
+                }
             }
         }
 
@@ -201,6 +246,26 @@ namespace Minecraft_updater.Services
                 var newDestinationDir = Path.Combine(destDir, subDir.Name);
                 CopyDirectory(subDir.FullName, newDestinationDir, overwrite);
             }
+        }
+
+        private static readonly HashSet<string> AvaloniaDependencyLibNames = new(
+            StringComparer.OrdinalIgnoreCase
+        )
+        {
+            "av_libglesv2.dll",
+            "libHarfBuzzSharp.dll",
+            "libSkiaSharp.dll",
+            "libHarfBuzzSharp.so",
+            "libSkiaSharp.so",
+        };
+
+        private static string GetTempFilePath(string originalPath)
+        {
+            var directory = Path.GetDirectoryName(originalPath);
+            var fileNameWithoutExtension = Path.GetFileNameWithoutExtension(originalPath);
+            var extension = Path.GetExtension(originalPath);
+            var tempFileName = $"{fileNameWithoutExtension}.temp{extension}";
+            return directory is null ? tempFileName : Path.Combine(directory, tempFileName);
         }
     }
 }
