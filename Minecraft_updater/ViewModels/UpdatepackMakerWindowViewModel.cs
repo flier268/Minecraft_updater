@@ -313,16 +313,17 @@ namespace Minecraft_updater.ViewModels
         )
         {
             var name = filePath.Substring(basepathLength);
+            var normalizedName = NormalizeToForwardSlashes(name);
             var sha256 = PrivateFunction.GetSHA256(filePath);
-            var url = BaseUrl + name.Replace("\\", "/");
-            var delimiterIndex = name.IndexOfAny(_delimiter);
+            var url = BaseUrl + normalizedName;
+            var delimiterIndex = normalizedName.IndexOfAny(_delimiter);
 
             switch (targetListIndex)
             {
                 case 0: // 同步清單
                     var syncPack = new Pack
                     {
-                        Path = name,
+                        Path = normalizedName,
                         SHA256 = sha256,
                         URL = url,
                         Delete = false,
@@ -331,13 +332,13 @@ namespace Minecraft_updater.ViewModels
                     sb1.AppendLine(_serializer.SerializeLine(syncPack));
 
                     if (
-                        (AddModToDelete && name.Contains("mod"))
-                        || (AddConfigToDelete && name.Contains("config"))
+                        (AddModToDelete && normalizedName.Contains("mod"))
+                        || (AddConfigToDelete && normalizedName.Contains("config"))
                     )
                     {
-                        var deleteName = name.Substring(
+                        var deleteName = normalizedName.Substring(
                             0,
-                            delimiterIndex == -1 ? name.Length : delimiterIndex
+                            delimiterIndex == -1 ? normalizedName.Length : delimiterIndex
                         );
                         var deletePack = new Pack
                         {
@@ -351,9 +352,9 @@ namespace Minecraft_updater.ViewModels
                     break;
 
                 case 1: // 刪除清單
-                    var deleteNameDirect = name.Substring(
+                    var deleteNameDirect = normalizedName.Substring(
                         0,
-                        delimiterIndex == -1 ? name.Length : delimiterIndex
+                        delimiterIndex == -1 ? normalizedName.Length : delimiterIndex
                     );
                     var deletePackDirect = new Pack
                     {
@@ -366,9 +367,9 @@ namespace Minecraft_updater.ViewModels
                     break;
 
                 case 2: // 不存在則添加清單
-                    var downloadName = name.Substring(
+                    var downloadName = normalizedName.Substring(
                         0,
-                        delimiterIndex == -1 ? name.Length : delimiterIndex
+                        delimiterIndex == -1 ? normalizedName.Length : delimiterIndex
                     );
                     var downloadPack = new Pack
                     {
@@ -398,6 +399,11 @@ namespace Minecraft_updater.ViewModels
         private void ClearDownloadWhenNotExistList()
         {
             DownloadWhenNotExistText = string.Empty;
+        }
+
+        private static string NormalizeToForwardSlashes(string path)
+        {
+            return path.Replace('\\', '/');
         }
 
         [RelayCommand]
@@ -481,7 +487,7 @@ namespace Minecraft_updater.ViewModels
             try
             {
                 // 移除相對路徑中的反斜線，統一使用正斜線
-                var normalizedPath = relativePath.Replace("\\", "/");
+                var normalizedPath = NormalizeToForwardSlashes(relativePath);
 
                 // 如果 URL 以相對路徑結尾，擷取 BaseUrl
                 if (fullUrl.EndsWith(normalizedPath, StringComparison.OrdinalIgnoreCase))
